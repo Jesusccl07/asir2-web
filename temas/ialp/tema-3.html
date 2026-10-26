@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0e13">
+<title>IALP · Tema 3 · Programación modular</title>
+<meta name="description" content="Tema 3 de IALP: subprogramas, parámetros, ámbito, librerías y depuración en PSeInt y Python.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="ialp.css">
+<link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+</head>
+<body>
+<script src="../../assets/config.js"></script>
+<script src="../../assets/claude-shim.js"></script>
+
+<header class="top">
+  <a class="brand" href="#teoria"><span class="logo">&gt;_</span><span class="t">IALP · Tema 3<small>PROGRAMACIÓN MODULAR</small></span></a>
+  <nav class="tabs" aria-label="Secciones">
+    <span class="pill" id="pill"></span>
+    <a href="#teoria" data-v="teoria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h6"/></svg><span>Teoría</span></a>
+    <a href="#practica" data-v="practica"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg><span>Práctica</span></a>
+    <a href="#test" data-v="test"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>Test</span></a>
+  </nav>
+  <div class="tools">
+    <span class="chip-streak" id="dayStreak" title="Días seguidos estudiando">🔥 <span id="dsN">0</span> <b>días</b></span>
+    <button class="icon-btn" id="themeBtn" aria-label="Cambiar tema claro/oscuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+
+<!-- ═════════════════════════ TEORÍA ═════════════════════════ -->
+<section class="view" id="v-teoria">
+<div class="container">
+  <div class="hero">
+    <div>
+      <span class="eyebrow"><i></i> UT3 · Divide y vencerás</span>
+      <h1>Divide el problema con <span class="grad">funciones</span></h1>
+      <p class="lead">Todo el Tema 3 de IALP: subprogramas, funciones y procedimientos, parámetros por valor y por referencia, ámbito de variables, librerías de Python y depuración, con laboratorios interactivos.</p>
+      <div class="hero-stats">
+        <div><b id="hBlocks">0</b><span>bloques de teoría</span></div>
+        <div><b id="hEx">0</b><span>ejercicios resueltos</span></div>
+        <div><b id="nQ">0</b><span>preguntas de test</span></div>
+      </div>
+    </div>
+    <div class="termwin" aria-hidden="true">
+      <div class="bar"><i></i><i></i><i></i><span>PSeInt · Python — ialp_tema3</span></div>
+      <pre id="typer"></pre>
+    </div>
+  </div>
+
+  <div class="mobile-toc" id="mtoc"></div>
+  <div class="layout">
+    <aside class="toc" id="toc"><h4>Índice</h4><nav id="tocNav"></nav><div class="prog">Has leído <b id="readN">0</b> de <span id="readTotal">0</span><div class="bar"><i id="readBar"></i></div></div></aside>
+    <div id="theory"></div>
+  </div>
+</div>
+</section>
+
+<!-- ═════════════════════════ PRÁCTICA ═════════════════════════ -->
+<section class="view" id="v-practica">
+<div class="container">
+  <div class="p-hero">
+    <span class="eyebrow"><i></i> Batería de ejercicios 1 · programación modular</span>
+    <h1>Batería de <span style="color:var(--acc)">ejercicios</span> modulares</h1>
+    <p class="muted" style="max-width:66ch;margin:0">Calculadora, primos, fuerza bruta, adivina el número y piedra, papel o tijera, con solución modular en Python y PSeInt. Marca los pasos de trabajo: tu progreso se guarda en este navegador.</p>
+    <div class="datos" id="datos"></div>
+  </div>
+
+  <div id="pDiagram"></div>
+
+  <div class="phase-h" style="margin-top:26px"><svg class="ring" viewBox="0 0 70 70"><circle class="bg" cx="35" cy="35" r="29"/><circle class="fg" id="pRing" cx="35" cy="35" r="29" stroke-dasharray="182.2" stroke-dashoffset="182.2"/></svg><div><h2>Checklist de trabajo</h2><p class="muted" style="margin:2px 0 0"><b id="pDone">0</b> de <b id="pTotal">0</b> pasos completados</p></div><button class="btn sm" id="pReset" style="margin-left:auto">Reiniciar checklist</button></div>
+  <div id="phases"></div>
+
+  <h2 class="rv" style="margin:40px 0 6px;font-size:1.6rem" id="p-cmds">Chuleta</h2>
+  <p class="muted rv">Lo que más se usa en el tema, agrupado por dónde se escribe.</p>
+  <div class="tscroll rv"><table class="tbl" id="cheat"><thead><tr><th>Instrucción</th><th>Dónde</th><th>Para qué sirve</th></tr></thead><tbody></tbody></table></div>
+
+  <h2 class="rv" style="margin:40px 0 14px;font-size:1.6rem">Si algo falla…</h2>
+  <div id="pFail"></div>
+
+  <h2 class="rv" style="margin:44px 0 6px;font-size:1.6rem" id="p-ej">Batería de ejercicios 1</h2>
+  <p class="muted rv">Enunciado, solución completa y lo que tiene que salir. Pulsa «Ver solución» para ver el código y copiarlo.</p>
+  <div class="filter-row rv" id="exFilter"></div>
+  <div class="ex-grid" id="exGrid"></div>
+
+  <h2 class="rv" style="margin:44px 0 14px;font-size:1.6rem" id="p-qa">Preguntas típicas de clase</h2>
+  <div id="qa" class="rv"></div>
+</div>
+</section>
+
+<!-- ═════════════════════════ TEST ═════════════════════════ -->
+<section class="view" id="v-test">
+<div class="container" id="testRoot"></div>
+</section>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box" id="modalBox"></div></div>
+<div class="toast" id="toast"></div>
+<footer class="footer">IALP · Tema 3 · Programación modular — Apuntes de Alfonso José Padilla Navarrete (UT3) · Hecho para repasar 💜</footer>
+
+<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gradRes" x1="0" x2="1"><stop offset="0" stop-color="#c084fc"/><stop offset=".6" stop-color="#60a5fa"/><stop offset="1" stop-color="#818cf8"/></linearGradient></defs></svg>
+
+<script src="ialp-engine.js"></script>
+<script src="tema-3-data.js"></script>
+<script src="tema-3-preguntas.js"></script>
+<script>TE.boot()</script>
+<script src="tema-3-labs.js"></script>
+<a id="asir-back" href="../../asignatura.html?s=ialp" aria-label="Volver a IALP" style="--c:#AF52DE;bottom:14px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span>IALP</span></a><link rel="stylesheet" href="../../assets/back.css">
+</body>
+</html>
