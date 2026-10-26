@@ -5,7 +5,20 @@ window.ASIR = {
       blurb:'Seguridad informática, amenazas y protección de sistemas.',
       topics:[ { n:1, title:'Tema 1', items:[ { id:'examen-tema-1', title:'Examen Tema 1', type:'Examen', desc:'Examen de repaso del Tema 1, con preguntas y autocorrección.', file:'temas/sad/examen-tema-1.html' } ] } ] },
     { slug:'ipei', code:'IPEII', name:'Itinerario Personal para la Empleabilidad II', teacher:'Gema Abad Rubio', color:'#FF9500', icon:'brief', blurb:'Orientación laboral y empleabilidad.', topics:[] },
-    { slug:'ialp', code:'IALP', name:'Implantación de Aplicaciones Web — Lenguajes de Programación', teacher:'Alfonso José Padilla Navarrete', color:'#AF52DE', icon:'code', blurb:'Algoritmos, PSeInt y fundamentos de programación.', topics:[] },
+    { slug:'ialp', code:'IALP', name:'Implantación de Aplicaciones Web — Lenguajes de Programación', teacher:'Alfonso José Padilla Navarrete', color:'#AF52DE', icon:'code', blurb:'Algoritmos, PSeInt y fundamentos de programación.',
+      topics:[
+        { n:1, title:'Tema 1 · Estructura de un programa', items:[
+        { id:'tema-1', title:'Teoría del Tema 1', type:'Apuntes', desc:'Algoritmos, datos, variables, expresiones, prioridad de operadores, PSeInt y Python, con laboratorios.', file:'temas/ialp/tema-1.html#teoria' },
+        { id:'tema-1-practica', title:'Práctica del Tema 1', type:'Práctica', desc:'Preparar PSeInt, Python y VS Code, y los 6 ejercicios resueltos en los dos lenguajes.', file:'temas/ialp/tema-1.html#practica' },
+        { id:'tema-1-test', title:'Test Tema 1', type:'Test', desc:'Preguntas en 3 niveles con rachas, XP, modo examen y ranking.', file:'temas/ialp/tema-1.html#test' } ] },
+        { n:2, title:'Tema 2 · Estructuras de control', items:[
+        { id:'tema-2', title:'Teoría del Tema 2', type:'Apuntes', desc:'Secuencias, if/elif, match y los bucles while y for, con laboratorios paso a paso.', file:'temas/ialp/tema-2.html#teoria' },
+        { id:'tema-2-practica', title:'Práctica del Tema 2', type:'Práctica', desc:'Los 15 ejercicios de PSeInt y los 7 de Python con solución en los dos lenguajes.', file:'temas/ialp/tema-2.html#practica' },
+        { id:'tema-2-test', title:'Test Tema 2', type:'Test', desc:'Preguntas en 3 niveles con rachas, XP, modo examen y ranking.', file:'temas/ialp/tema-2.html#test' } ] },
+        { n:3, title:'Tema 3 · Programación modular', items:[
+        { id:'tema-3', title:'Teoría del Tema 3', type:'Apuntes', desc:'Subprogramas, parámetros, ámbito, librerías y depuración, con laboratorios y un depurador simulado.', file:'temas/ialp/tema-3.html#teoria' },
+        { id:'tema-3-practica', title:'Práctica del Tema 3', type:'Práctica', desc:'Batería de ejercicios 1: calculadora, primos, fuerza bruta, adivina el número y piedra-papel-tijera.', file:'temas/ialp/tema-3.html#practica' },
+        { id:'tema-3-test', title:'Test Tema 3', type:'Test', desc:'Preguntas en 3 niveles con rachas, XP, modo examen y ranking.', file:'temas/ialp/tema-3.html#test' } ] } ] },
     { slug:'pima', code:'PIMAS', name:'Proyecto Intermodular', teacher:'Manuel Peña Villanueva', color:'#FF2D78', icon:'rocket', blurb:'Proyecto final de ciclo.', topics:[] },
     { slug:'aso',  code:'ASO',  name:'Administración de Sistemas Operativos', teacher:'Alberto Montoro Gavilán', color:'#0A84FF', icon:'term',
       blurb:'Sistemas operativos, shell script y administración.',

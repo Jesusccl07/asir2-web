@@ -28,3 +28,12 @@ Para que todos los usuarios aparezcan en el mismo ranking hace falta una base de
 1. Crea un proyecto en <https://console.firebase.google.com> y activa **Firestore** en modo de prueba.
 2. Rellena `assets/config.js` con `projectId` y `apiKey` del proyecto.
 3. Haz commit y push.
+
+## IALP · Temas 1, 2 y 3 (PSeInt y Python)
+
+`temas/ialp/tema-N.html` (N = 1, 2, 3) con las vistas `#teoria`, `#practica` y `#test`, igual que ASO Tema 2.
+
+- `ialp.css` y `ialp-engine.js` · estilo y motor comunes (navegación, índice, práctica, test, ranking `ialpN-ranking`).
+- `tema-N-data.js` · teoría (secciones), práctica (checklist, chuleta, ejercicios resueltos en PSeInt y Python) y preguntas de clase.
+- `tema-N-preguntas.js` · banco de preguntas (la primera opción es la correcta; se mezclan al mostrarlas).
+- `tema-N-labs.js` · laboratorios interactivos de cada tema.
