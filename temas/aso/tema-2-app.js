@@ -289,8 +289,80 @@ const EX=[
  ['e20_main','Funciones','Main que incluye las funciones','Incluir con «.» el fichero de funciones; el menú se repite hasta salir.','./aso_t02_sh_e20_main_clementejesus.sh 10 2.5 3','El menú se repite hasta elegir q o 0'],
  ['e21','Funciones','Ámbito de las variables','Antes de ejecutarlo, pensar qué valor tendrá cada variable (export, global y local).','./aso_t02_sh_e21_clementejesus.sh','Después de invocar: Soy global · Soy una cadena… · (vacía: era local)'],
  ['e22','Funciones','Áreas y perímetros','Menú con funciones para el cuadrado, el rectángulo y la circunferencia (pi = 4*a(1)).','./aso_t02_sh_e22_clementejesus.sh','Radio 2 → Área 12.56 · Perímetro 12.56'],
- ['e23','Funciones','Múltiplos V1, V2, V3 y array','Múltiplos de 3 hasta 3000; después de NUM hasta LIMITE con validación, una cadena y un array.','./aso_t02_sh_e23_clementejesus.sh','NUM=7, LIMITE=50 → 7 14 21 28 35 42 49']];
-const CATC={Inicio:'#0c9a6a',Aritmética:'#c76a05',Cadenas:'#d93b55',Ficheros:'#1a6fd6',Bucles:'#6a48d6',Arrays:'#0e7bbd',Funciones:'#7a4cc2'};
+ ['e23','Funciones','Múltiplos V1, V2, V3 y array','Múltiplos de 3 hasta 3000; después de NUM hasta LIMITE con validación, una cadena y un array.','./aso_t02_sh_e23_clementejesus.sh','NUM=7, LIMITE=50 → 7 14 21 28 35 42 49'],
+ ['seguimiento_A','Seguimiento','Tipo A · ¿Cabe la clonación?','origen=476.94 GiB. Pedir el tamaño del disco de destino hasta que sea un real no negativo. Si es 0, error de lectura (exit 1); si es ≥ origen, correcto (exit 0); si no, insuficiente (exit 1).','./ej06d_seguimiento1_tipoA.sh; echo "Código: $?"','hola → lo vuelve a pedir · 0 → error de lectura (1) · 300 → insuficiente (1) · 500 → correcto (0)'],
+ ['seguimiento_B','Seguimiento','Tipo B · Cuota de la carpeta personal','limite=2048.50 MiB. Pedir el espacio ocupado hasta que sea un real no negativo. Si es 0, sin límite (exit 0); si supera el límite, cuota superada (exit 1); si no, cuota correcta (exit 0).','./ej06d_seguimiento1_tipoB.sh; echo "Código: $?"','-5 → lo vuelve a pedir · 0 → sin límite (0) · 3000 → cuota superada (1) · 2048.50 → correcta (0)']];
+SCR.seguimiento_A={file:'ej06d_seguimiento1_tipoA.sh',code:String.raw`#!/bin/bash
+# Tipo A: comprobar que el disco de destino tiene capacidad suficiente para la clonación
+
+# 1. Limpiar la pantalla
+clear
+
+# 2. Tamaño del disco de origen en GiB
+origen=476.94
+
+# 3. Pedir el tamaño del disco de destino hasta que sea un número real no negativo
+read -p "Tamaño del disco de destino (GiB): " destino
+while [[ ! "$destino" =~ ^[0-9]+([.][0-9]+)?$ ]]
+do
+    echo "Error: introduce un número real no negativo (por ejemplo 500 o 512.5)."
+    read -p "Tamaño del disco de destino (GiB): " destino
+done
+
+# 4. Si el tamaño es 0, ha habido un problema al leer el disco
+if [ "$(echo "$destino == 0" | bc)" -eq 1 ]
+then
+    echo "Error: se ha producido un problema al leer el tamaño del disco."
+    exit 1
+fi
+
+# 5. Destino mayor o igual que origen: tamaño correcto
+if [ "$(echo "$destino >= $origen" | bc)" -eq 1 ]
+then
+    echo "El tamaño del disco de destino ($destino GiB) es correcto."
+    exit 0
+fi
+
+# 6. Destino menor que origen: tamaño insuficiente
+echo "Error: el tamaño del disco de destino ($destino GiB) es insuficiente; el de origen tiene $origen GiB."
+exit 1
+`};
+SCR.seguimiento_B={file:'ej06d_seguimiento1_tipoB.sh',code:String.raw`#!/bin/bash
+# Tipo B: comprobar que el espacio ocupado por la carpeta personal no supera el límite
+
+# 1. Limpiar la pantalla
+clear
+
+# 2. Límite de espacio permitido para la carpeta personal en MiB
+limite=2048.50
+
+# 3. Pedir el espacio ocupado hasta que sea un número real no negativo
+read -p "Espacio que ocupa tu carpeta personal (MiB): " ocupado
+while [[ ! "$ocupado" =~ ^[0-9]+([.][0-9]+)?$ ]]
+do
+    echo "Error: introduce un número real no negativo (por ejemplo 1500 o 1024.75)."
+    read -p "Espacio que ocupa tu carpeta personal (MiB): " ocupado
+done
+
+# 4. Si el espacio ocupado es 0, el disco no tiene límite asignado
+if [ "$(echo "$ocupado == 0" | bc)" -eq 1 ]
+then
+    echo "El disco no tiene límite de espacio asignado: no tienes que preocuparte."
+    exit 0
+fi
+
+# 5. Ocupado mayor que el límite: cuota superada
+if [ "$(echo "$ocupado > $limite" | bc)" -eq 1 ]
+then
+    echo "Error: has superado la cuota de disco ($ocupado MiB de $limite MiB)."
+    exit 1
+fi
+
+# 6. Ocupado menor o igual que el límite: cuota correcta
+echo "La cuota de disco es correcta ($ocupado MiB de $limite MiB)."
+exit 0
+`};
+const CATC={Inicio:'#0c9a6a',Aritmética:'#c76a05',Cadenas:'#d93b55',Ficheros:'#1a6fd6',Bucles:'#6a48d6',Arrays:'#0e7bbd',Funciones:'#7a4cc2',Seguimiento:'#e0475b'};
 let exCat='Todos';
 function paintEx(){$('#exFilter').innerHTML=['Todos',...Object.keys(CATC)].map(c=>'<button class="tchip" type="button" aria-pressed="'+(c===exCat)+'" data-c="'+c+'">'+c+'</button>').join('');
   $$('#exFilter button').forEach(b=>b.onclick=()=>{exCat=b.dataset.c;paintEx()});
