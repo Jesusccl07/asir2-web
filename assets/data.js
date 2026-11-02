@@ -27,7 +27,12 @@ window.ASIR = {
         { id:'tema-2', title:'Teoría de Shell Script', type:'Apuntes', desc:'Bash de cero a funciones: esquemas, posits, tarjetas y laboratorios interactivos.', file:'temas/aso/tema-2.html#teoria' },
         { id:'tema-2-practica', title:'Red, SSH y configuración', type:'Práctica', desc:'Checklist de la MV, la red Host-Only, SSH y VS Code, y los 23 ejercicios resueltos.', file:'temas/aso/tema-2.html#practica' },
         { id:'tema-2-test', title:'Test Tema 2', type:'Test', desc:'Más de 200 preguntas en 3 niveles, con rachas, XP, modo examen y ranking.', file:'temas/aso/tema-2.html#test' } ] } ] },
-    { slug:'sri',  code:'SRI',  name:'Servicios de Red e Internet', teacher:'Raúl', color:'#28B850', icon:'net', blurb:'Servicios de red, DNS, DHCP y más.', topics:[] },
+    { slug:'sri',  code:'SRI',  name:'Servicios de Red e Internet', teacher:'Raúl', color:'#28B850', icon:'net', blurb:'Servicios de red, DNS, DHCP y más.',
+      topics:[
+        { n:1, title:'Tema 1 · Redes, direccionamiento y DHCP', items:[
+        { id:'tema-1', title:'Teoría del Tema 1', type:'Apuntes', desc:'TCP/IP, IPv4 e IPv6, máscaras, subredes y DHCP con esquemas y laboratorios (calculadora de red, simulador DORA, generador de dhcpd.conf).', file:'temas/sri/tema-1.html#teoria' },
+        { id:'tema-1-practica', title:'Práctica del Tema 1', type:'Práctica', desc:'Servidor DHCP en Ubuntu y Windows Server paso a paso, la Práctica 1 y los ejercicios de direccionamiento resueltos.', file:'temas/sri/tema-1.html#practica' },
+        { id:'tema-1-test', title:'Test Tema 1', type:'Test', desc:'Más de 150 preguntas en 3 niveles con rachas, XP, modo examen y ranking.', file:'temas/sri/tema-1.html#test' } ] } ] },
     { slug:'iaw',  code:'IAW',  name:'Implantación de Aplicaciones Web', teacher:'Raúl', color:'#00B8D9', icon:'globe',
       blurb:'Servidores web, XAMPP, PHP y aplicaciones en la nube.',
       topics:[ { n:1, title:'Tema 1', items:[ { id:'test-tema-1', title:'Test Tema 1', type:'Test', desc:'Test del Tema 1 con ranking de puntuaciones.', file:'temas/iaw/test-tema-1.html' } ] } ] },
