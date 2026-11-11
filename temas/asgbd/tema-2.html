@@ -149,6 +149,15 @@ h1,h2,h3,h4{font-family:var(--f-d);line-height:1.12;letter-spacing:-.01em;margin
 .note p{margin:0}.note p+p{margin-top:6px}
 .note.tip{--c:var(--acc)}.note.warn{--c:var(--amber)}.note.info{--c:var(--sky)}.note.bad{--c:var(--rose)}.note.vio{--c:var(--violet)}
 .note b.t{display:block;font-family:var(--f-d);margin-bottom:2px}
+.eli{margin:18px 0;padding:14px 18px 14px;border-radius:16px;border:2px dashed color-mix(in srgb,var(--c,var(--acc)) 45%,transparent);background:color-mix(in srgb,var(--c,var(--acc)) 6%,var(--panel))}
+.eli::before{content:"En cristiano";display:block;font:700 1.4rem/1 var(--f-h);color:var(--c,var(--acc));margin-bottom:6px}
+.eli p{margin:0}.eli p+p{margin-top:8px}
+.pasos{list-style:none;counter-reset:p;margin:14px 0;padding:0;display:grid;gap:10px}
+.pasos li{counter-increment:p;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.pasos li::before{content:counter(p);flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--c,var(--acc));color:#fff;font:700 .85rem var(--f-m)}
+.pasos li div{min-width:0}
+.sec p code,.pasos code,.card p code{white-space:normal;overflow-wrap:anywhere}
+.tbl td.grp{text-align:center;font:700 .74rem var(--f-m);letter-spacing:.08em;color:var(--muted);background:var(--panel2)}
 
 /* código */
 .code{position:relative;margin:14px 0;border-radius:14px;background:var(--code-bg);border:1px solid #1c232d;overflow:hidden;box-shadow:var(--shadow)}
@@ -433,17 +442,39 @@ details.qa .ans p{margin:0 0 8px}
 
 <!-- 1 · ARRANQUE Y PARADA -->
 <section class="sec" id="a-arranque" data-title="Arranque y parada" style="--c:var(--acc)">
-  <div class="sec-head rv"><div class="sec-num">01</div><div><h2>Arranque y parada de la instancia</h2><p>El fichero de parámetros, los tres estados de una CDB y cómo arrancar y parar PDBs.</p></div></div>
+  <div class="sec-head rv"><div class="sec-num">01</div><div><h2>Arranque y parada de la base de datos</h2><p>Qué lee Oracle para arrancar, por qué estados pasa, qué opciones tiene STARTUP, los cuatro tipos de SHUTDOWN y cómo se arrancan y paran las PDBs.</p></div></div>
 
-  <h3 class="rv">El fichero de parámetros</h3>
-  <p class="rv">Para arrancar la instancia, Oracle necesita leer el <b>fichero de parámetros de inicialización</b>, ubicado en <code>$ORACLE_HOME/dbs</code>. Puede ser de dos tipos:</p>
+  <p class="rv">Antes de nada, dos palabras que se confunden mucho. La <b>instancia</b> es lo que vive en <b>memoria</b>: la SGA y los procesos en segundo plano (background). La <b>base de datos</b> son los <b>ficheros en disco</b>: datafiles, redo log y ficheros de control. Arrancar Oracle es ir "enganchando" la instancia a esos ficheros paso a paso; pararlo es soltarlos en orden.</p>
+  <div class="eli rv"><p>Es como abrir una tienda por la mañana. Primero enciendes las luces y la caja (<b>NOMOUNT</b>: memoria y procesos). Luego abres el almacén y miras el inventario para saber qué tienes (<b>MOUNT</b>: se lee el fichero de control). Por último abres la puerta a los clientes (<b>OPEN</b>: ya se puede entrar).</p></div>
+
+  <h3 class="rv">El fichero de parámetros: lo primero que lee Oracle</h3>
+  <p class="rv">Para arrancar la instancia, el servidor necesita saber cuánta memoria reservar, dónde están los ficheros de control, cómo se llama la base de datos… Todo eso está en el <b>fichero de parámetros de inicialización</b>, que vive en <code>$ORACLE_HOME/dbs</code>. Hay dos tipos:</p>
   <div class="grid g2 rv">
-    <div class="card" style="--c:var(--sky)"><div class="ic">📝</div><h4>init$ORACLE_SID.ora</h4><p>Texto plano, editable a mano. No se puede incluir en los backups de RMAN. Hay que tenerlo en el propio sistema para arrancar con él.</p></div>
-    <div class="card" style="--c:var(--violet)"><div class="ic">💾</div><h4>spfile$ORACLE_SID.ora</h4><p>Binario, no editable directamente pero sí visualizable. Permite arranque remoto y guarda los cambios de <code>ALTER SYSTEM</code>. Existe desde la 9i.</p></div>
+    <div class="card" style="--c:var(--sky)"><div class="ic">📝</div><h4>PFILE · init$ORACLE_SID.ora</h4><p>Fichero de <b>texto</b>: lo abres con cualquier editor y lo cambias a mano. Pero los cambios hechos con ALTER SYSTEM <b>no se guardan</b> en él: tienes que escribirlos tú. No entra en los backups de RMAN y tiene que estar en la máquina que arranca la instancia.</p></div>
+    <div class="card" style="--c:var(--violet)"><div class="ic">💾</div><h4>SPFILE · spfile$ORACLE_SID.ora</h4><p>Fichero <b>binario</b>: se puede ver pero no editar a mano. Existe desde la versión <b>9i</b>, es más rápido que el init, entra en los backups de RMAN, permite arrancar en remoto y, sobre todo, <b>guarda los cambios de ALTER SYSTEM</b>.</p></div>
   </div>
-  <div class="note info rv"><div class="ni">i</div><p><b class="t">¿Dónde está?</b>Si no lo encuentras, conéctate como SYS y ejecuta <code>show parameter spfile</code>.</p></div>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Característica</th><th>PFILE (init.ora)</th><th>SPFILE</th></tr></thead><tbody>
+    <tr><td>Formato</td><td>Texto, editable</td><td>Binario, solo visualizable</td></tr>
+    <tr><td>Backups con RMAN</td><td>No</td><td>Sí</td></tr>
+    <tr><td>Arranque en remoto</td><td>No: el fichero tiene que estar en la máquina</td><td>Sí</td></tr>
+    <tr><td>Guarda los ALTER SYSTEM</td><td>No: hay que escribirlo a mano</td><td>Sí</td></tr>
+    <tr><td>Velocidad</td><td>Más lento</td><td>Más rápido</td></tr>
+  </tbody></table></div>
+  <div class="note warn rv"><div class="ni">!</div><p><b class="t">Aunque uses SPFILE, guarda un PFILE</b>Si la base de datos no arranca por un parámetro mal puesto, el SPFILE no lo puedes editar. Con un PFILE de copia lo corriges a mano y arrancas con él.</p></div>
+  <p class="rv">¿No encuentras el SPFILE en <code>$ORACLE_HOME/dbs</code>? Conéctate como SYS y pregúntale a Oracle dónde está:</p>
+  <div class="code rv" data-fn="SQL*Plus"><pre>show parameter spfile
 
-  <h3 class="rv">Los tres estados de una CDB</h3>
+NAME   TYPE   VALUE
+------ ------ ------------------------------------------------
+spfile string /opt/oracle/product/23ai/dbhomeFree/dbs/spfileFREE.ora</pre></div>
+
+  <h3 class="rv">Cómo se arranca</h3>
+  <p class="rv">Siempre igual: te conectas a SQL*Plus como administrador y lanzas <code>startup</code>. El <code>/ as sysdba</code> significa "entro con el usuario del sistema operativo (oracle), sin escribir contraseña, con el privilegio SYSDBA", que es el que permite arrancar y parar.</p>
+  <div class="code rv" data-fn="terminal"><pre>[oracle]$ sqlplus / as sysdba
+SQL> startup</pre></div>
+
+  <h3 class="rv">Los tres estados del arranque</h3>
+  <p class="rv">Un <code>startup</code> a secas pasa por los tres estados seguidos y deja la base de datos abierta. Pero puedes pararte en cualquiera de ellos, porque hay tareas que <b>solo</b> se pueden hacer en un estado concreto.</p>
   <div class="diagram rv">
     <svg viewBox="0 0 760 190" role="img" aria-label="Nomount, mount y open">
       <defs><marker id="arA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
@@ -455,11 +486,11 @@ details.qa .ans p{margin:0 0 8px}
     </svg>
     <div class="cap">Cada estado añade un paso más: de solo memoria, a conocer los ficheros, a tenerlos abiertos.</div>
   </div>
-  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Estado</th><th>Qué ocurre</th></tr></thead><tbody>
-    <tr><td><code>NOMOUNT</code></td><td>Conexión a los archivos de control, lectura de parámetros, creación de la SGA, arranque de procesos background y apertura del fichero alert.</td></tr>
-    <tr><td><code>MOUNT</code></td><td>Los procesos se asocian a los archivos de la BD. Se abre el fichero de control y se obtienen los nombres de datafiles y redo log.</td></tr>
-    <tr><td><code>OPEN</code></td><td>Se abren datafiles y redo log. Se comprueba la consistencia y, si hace falta, SMON inicia la recuperación. La BD queda accesible a todos.</td></tr>
-  </tbody></table></div>
+  <ol class="pasos rv">
+    <li><div><b>NOMOUNT.</b> Oracle lee el fichero de parámetros, crea la <b>SGA</b> en memoria, arranca los <b>procesos background</b> y abre el fichero de alertas <code>alert_SID.log</code>. Todavía no sabe nada de los ficheros de la base de datos.</div></li>
+    <li><div><b>MOUNT.</b> La instancia se asocia a la base de datos: abre el <b>fichero de control</b> y de él saca los nombres y rutas de los <b>datafiles</b> y los <b>redo log</b>. Los conoce, pero aún no los abre.</div></li>
+    <li><div><b>OPEN.</b> Abre los datafiles y los redo log y comprueba que todo es <b>consistente</b>. Si la última parada fue brusca, el proceso <b>SMON</b> hace la recuperación de la instancia. A partir de aquí la base de datos está accesible para todos los usuarios.</div></li>
+  </ol>
 
   <div class="lab rv">
     <h4>Simulador de arranque</h4>
@@ -473,41 +504,102 @@ details.qa .ans p{margin:0 0 8px}
     <div class="term-out" id="stCmd"></div>
   </div>
 
-  <h3 class="rv">Tipos de parada</h3>
+  <h3 class="rv">Pasar de un estado a otro</h3>
+  <p class="rv">Si arrancaste con <code>startup nomount</code> o <code>startup mount</code>, no hace falta parar y volver a empezar: subes de estado con ALTER DATABASE. También puedes dejar la base de datos abierta pero <b>solo para administradores</b> (modo restringido), útil para hacer mantenimiento sin que entren usuarios.</p>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- subir de estado
+alter database mount;
+alter database open;
+
+-- modo restringido: solo entra quien tenga RESTRICTED SESSION
+alter system enable restricted session;
+alter system disable restricted session;</pre></div>
+
+  <h3 class="rv">Opciones de STARTUP: qué se puede hacer en cada una</h3>
+  <p class="rv">La pregunta típica de examen es "¿en qué estado hay que estar para hacer X?". La clave: en NOMOUNT aún no hay ficheros abiertos (por eso se <b>crea</b> la base de datos ahí) y en MOUNT se conocen los ficheros pero no están abiertos (por eso se <b>renombran</b> datafiles o se hace <b>recuperación</b>).</p>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Comando</th><th>Para qué se usa</th></tr></thead><tbody>
+    <tr><td><code>startup nomount</code></td><td>Crear la base de datos. Cambiar el modo de archivado. Renombrar los redo log o el fichero del tablespace SYSTEM. Crear, modificar o borrar redo log o grupos de redo log.</td></tr>
+    <tr><td><code>startup mount</code></td><td>Renombrar datafiles. Activar el modo ARCHIVELOG. Recuperar la base de datos. Cualquier tarea sobre los ficheros, ya que sus datos aún no están abiertos.</td></tr>
+    <tr><td><code>startup archivelog</code></td><td>Iniciar una recuperación completa de la base de datos.</td></tr>
+    <tr><td><code>startup restrict</code></td><td>Arranca pero solo deja entrar a usuarios con el privilegio RESTRICTED SESSION. Para tareas de administración.</td></tr>
+    <tr><td><code>startup force</code></td><td>Hace un SHUTDOWN ABORT y vuelve a arrancar. Para cuando la instancia se ha quedado colgada.</td></tr>
+    <tr><td><code>startup pfile='ruta'</code></td><td>Arranca con un fichero de parámetros concreto en lugar del de por defecto.</td></tr>
+  </tbody></table></div>
+
+  <h3 class="rv">La parada: los cuatro SHUTDOWN</h3>
+  <p class="rv">Para parar te conectas igual (<code>sqlplus / as sysdba</code>) y lanzas <code>shutdown</code>. Lo que cambia entre un tipo y otro es <b>cuánto respeta</b> a los usuarios conectados: si espera a que terminen, si corta y deshace lo pendiente, o si lo tira todo de golpe.</p>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Comando</th><th>Nuevas conexiones</th><th>Sesiones y transacciones abiertas</th><th>Checkpoint y cierre limpio</th></tr></thead><tbody>
+    <tr><td><code>shutdown</code> (normal)</td><td>No</td><td><b>Espera</b> a que terminen todas las transacciones y todas las sesiones. Al cerrarse la última, se cierra.</td><td>Sí</td></tr>
+    <tr><td><code>shutdown transactional</code></td><td>No</td><td>Echa a quien no esté en mitad de una transacción y <b>espera</b> a que acaben las transacciones de la CDB. Las de las PDBs se cortan con rollback.</td><td>Sí</td></tr>
+    <tr><td><code>shutdown immediate</code></td><td>No</td><td>Cierra las sesiones actuales y hace <b>rollback</b> de todo lo que no esté confirmado.</td><td>Sí</td></tr>
+    <tr><td><code>shutdown abort</code></td><td>No</td><td>Corta todo <b>de golpe</b>: destruye la SGA y los procesos sin cerrar nada.</td><td><b>No</b>: no hay checkpoint ni se cierran ficheros</td></tr>
+  </tbody></table></div>
+  <p class="rv">Los tres primeros comparten los <b>pasos comunes</b> de una parada limpia: fuerzan un <b>checkpoint</b> (los datos de los buffers se escriben en disco), <b>cierran todos los ficheros</b> y paran primero las <b>PDBs</b> y luego la <b>CDB</b>.</p>
   <div class="lab rv">
     <h4>Elige un comando de parada</h4>
     <span class="seg" id="shutSeg"></span>
     <div class="term-out" id="shutOut" style="margin-top:10px"></div>
   </div>
-  <div class="note bad rv"><div class="ni">!</div><p><b class="t">shutdown abort</b>No hace checkpoint, no cierra ficheros y no guarda nada en disco. Requiere recovery automático (SMON) en el siguiente arranque.</p></div>
-
-  <h3 class="rv">Arranque y parada de PDBs</h3>
-  <div class="grid g2 rv">
-    <div class="card" style="--c:var(--acc)"><div class="ic">🔌</div><h4>Abrir una PDB</h4><p><code>alter pluggable database freepdb1 open;</code> desde la CDB, o <code>startup;</code> conectando directamente a la PDB (si ya está MOUNTED).</p></div>
-    <div class="card" style="--c:var(--rose)"><div class="ic">🔒</div><h4>Cerrar una PDB</h4><p><code>alter pluggable database freepdb1 close;</code> desde la CDB, o <code>shutdown</code> conectando directamente a ella.</p></div>
+  <div class="note bad rv"><div class="ni">!</div><p><b class="t">shutdown abort</b>No hace checkpoint, no cierra ficheros y no guarda nada en disco. La base de datos queda "a medias", así que en el siguiente arranque hace falta <b>recuperación de la instancia</b>, que hace automáticamente el proceso <b>SMON</b>.</p></div>
+  <div class="postits rv">
+    <div class="postit">NORMAL puede tardar horas<small>Espera a que se desconecten todos. Si alguien deja una sesión abierta, no termina nunca.</small></div>
+    <div class="postit blue">El de todos los días: IMMEDIATE<small>Para rápido y limpio: echa a todos y deshace lo pendiente.</small></div>
+    <div class="postit pink">ABORT, solo si no queda otra<small>Es "tirar del cable". STARTUP FORCE lo usa por dentro.</small></div>
   </div>
+
+  <h3 class="rv">Arranque y parada de las PDBs</h3>
+  <p class="rv">Cuando arranca la CDB, sus PDBs se quedan por defecto en estado <b>MOUNTED</b> (montadas, pero cerradas). Abrirlas es otro paso. Hay tres formas, y las tres valen en el examen:</p>
+  <ol class="pasos rv">
+    <li><div><b>Desde la CDB, con ALTER PLUGGABLE DATABASE</b> (conectado con <code>sqlplus / as sysdba</code>).</div></li>
+    <li><div><b>Desde la CDB, con STARTUP PLUGGABLE DATABASE</b>: solo funciona si la PDB ya está MOUNTED.</div></li>
+    <li><div><b>Desde dentro de la PDB</b>: te conectas a ella y haces un <code>startup</code> normal (también exige que esté MOUNTED).</div></li>
+  </ol>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- 1) desde la CDB
+alter pluggable database freepdb1 open;
+
+-- 2) desde la CDB, con startup
+startup pluggable database freepdb1;
+
+-- 3) desde dentro de la PDB
+-- [oracle]$ sqlplus sys@freepdb1 as sysdba
+startup;</pre></div>
   <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Modo de apertura</th><th>Qué permite</th></tr></thead><tbody>
-    <tr><td><code>OPEN</code></td><td>Modo READ WRITE, acceso completo.</td></tr>
+    <tr><td><code>OPEN</code></td><td>Modo READ WRITE: lectura y escritura completas.</td></tr>
     <tr><td><code>OPEN READ ONLY</code></td><td>Solo lectura.</td></tr>
-    <tr><td><code>RESTRICTED</code></td><td>Solo usuarios con privilegio RESTRICTED SESSION.</td></tr>
-    <tr><td><code>OPEN UPGRADE</code></td><td>Para ejecutar scripts de actualización.</td></tr>
-    <tr><td><code>OPEN FORCE</code></td><td>Cierra con ABORT y reinicia.</td></tr>
+    <tr><td><code>RESTRICTED</code></td><td>Solo entran usuarios con el privilegio RESTRICTED SESSION.</td></tr>
+    <tr><td><code>OPEN UPGRADE</code></td><td>Para ejecutar scripts de actualización de la base de datos.</td></tr>
+    <tr><td><code>OPEN FORCE</code></td><td>Cierra la PDB con un ABORT y la vuelve a abrir.</td></tr>
   </tbody></table></div>
-  <p class="rv"><code>alter pluggable database all open;</code> abre todas las montadas (con <code>EXCEPT (pdb1, pdb2)</code> se pueden excluir algunas).</p>
+  <p class="rv">Para abrir <b>todas</b> las PDBs montadas de una vez se usa <code>ALL</code>, y con <code>EXCEPT</code> dejas fuera las que quieras:</p>
+  <div class="code rv" data-fn="SQL*Plus"><pre>alter pluggable database all open;
+alter pluggable database all except (pdb1, pdb2) open;
+alter pluggable database all open read only;
+alter pluggable database all open restricted;</pre></div>
+  <p class="rv">Para <b>cerrar</b> una PDB, lo mismo pero al revés: <code>close</code> desde la CDB, o <code>shutdown</code> desde dentro de la PDB.</p>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- desde la CDB
+alter pluggable database freepdb1 close;
+
+-- desde dentro de la PDB
+shutdown</pre></div>
+  <div class="note info rv"><div class="ni">i</div><p><b class="t">Diferencias de la parada en una PDB</b>Los tipos son los mismos, con dos matices: en una PDB <b>TRANSACTIONAL se comporta igual que NORMAL</b>, y el ABORT cierra solo esa PDB (no destruye la SGA ni los procesos, porque son de la CDB).</p></div>
 </section>
 
 <!-- 2 · CUENTAS DE ADMINISTRADOR -->
 <section class="sec" id="a-cuentas" data-title="Cuentas de administrador" style="--c:var(--rose)">
-  <div class="sec-head rv"><div class="sec-num">02</div><div><h2>Asegurar las cuentas de administrador</h2><p>SYS y SYSTEM, sus contraseñas por defecto y cómo cambiarlas.</p></div></div>
+  <div class="sec-head rv"><div class="sec-num">02</div><div><h2>Asegurar las cuentas de administrador</h2><p>SYS y SYSTEM: para qué sirve cada una, sus contraseñas por defecto y por qué hay que cambiarlas nada más instalar.</p></div></div>
+  <p class="rv">Al instalar Oracle se crean muchos usuarios, pero dos son los administradores "de serie": <b>SYS</b> y <b>SYSTEM</b>. Los dos traen una <b>contraseña por defecto</b> que conoce todo el mundo (sale en cualquier manual), así que dejarla puesta es como dejar la llave debajo del felpudo.</p>
   <div class="grid g2 rv">
-    <div class="card" style="--c:var(--rose)"><div class="ic">👑</div><h4>SYS <span class="tag" style="--c:var(--rose)">change_on_install</span></h4><p>Propietario del diccionario de datos. Se usa para arrancar/parar la BD y modificar sus componentes.</p></div>
-    <div class="card" style="--c:var(--sky)"><div class="ic">🛠️</div><h4>SYSTEM <span class="tag" style="--c:var(--sky)">manager</span></h4><p>El DBA "por excelencia". Tareas administrativas habituales: alta de usuarios, tablespaces, etc.</p></div>
+    <div class="card" style="--c:var(--rose)"><div class="ic">👑</div><h4>SYS <span class="tag" style="--c:var(--rose)">change_on_install</span></h4><p>Es el <b>propietario del diccionario de datos</b>. Se usa para <b>arrancar y parar</b> la base de datos y para <b>modificar sus componentes</b>. Es el más poderoso: un error con SYS puede romper la base de datos.</p></div>
+    <div class="card" style="--c:var(--sky)"><div class="ic">🛠️</div><h4>SYSTEM <span class="tag" style="--c:var(--sky)">manager</span></h4><p>El <b>DBA por excelencia</b>. Se usa para las tareas administrativas del día a día: <b>dar de alta usuarios</b>, <b>crear tablespaces</b>, etc.</p></div>
   </div>
-  <div class="postits rv" style="margin-top:22px">
-    <div class="postit pink">¡Cámbialas siempre!<small>change_on_install y manager son contraseñas públicas conocidas por cualquiera.</small></div>
-    <div class="postit blue">SYS ≠ SYSTEM<small>SYS es dueño del diccionario; SYSTEM es para el trabajo diario del DBA.</small></div>
-  </div>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th></th><th>SYS</th><th>SYSTEM</th></tr></thead><tbody>
+    <tr><td>Contraseña por defecto</td><td><code>change_on_install</code></td><td><code>manager</code></td></tr>
+    <tr><td>Qué es</td><td>Dueño del diccionario de datos</td><td>DBA por excelencia</td></tr>
+    <tr><td>Para qué se usa</td><td>Arrancar/parar la BD y modificar sus componentes</td><td>Alta de usuarios, creación de tablespaces…</td></tr>
+  </tbody></table></div>
+  <div class="eli rv"><p>SYS es el dueño del edificio: tiene las llaves de la sala de máquinas y es el único que enciende y apaga. SYSTEM es el encargado: gestiona a la gente que entra y reparte los espacios, pero no toca la maquinaria.</p></div>
+
   <h3 class="rv">Cambiar las contraseñas</h3>
+  <p class="rv">Conectado como <b>SYSTEM</b> (o como SYS), se cambian con <code>ALTER USER … IDENTIFIED BY</code>. Pon la contraseña entre <b>comillas dobles</b>: así Oracle respeta mayúsculas, minúsculas y caracteres especiales.</p>
   <div class="code rv" data-fn="SQL*Plus"><pre>-- conectado como system
 alter user sys identified by "contraseña";
 alter user system identified by "contraseña";</pre></div>
@@ -517,7 +609,13 @@ alter user system identified by "contraseña";</pre></div>
     <input type="text" id="pwVal" placeholder="Nueva contraseña…" value="MiClaveSegura1"></div>
     <div class="term-out" id="pwOut"></div>
   </div>
-  <h3 class="rv">SYSDBA frente a SYSOPER</h3>
+  <div class="postits rv">
+    <div class="postit pink">¡Cámbialas siempre!<small>change_on_install y manager son públicas: las conoce cualquiera.</small></div>
+    <div class="postit blue">SYS ≠ SYSTEM<small>SYS es dueño del diccionario; SYSTEM es para el trabajo diario del DBA.</small></div>
+  </div>
+
+  <h3 class="rv">Y el "as sysdba" de antes, ¿qué es?</h3>
+  <p class="rv">Cuando te conectas con <code>as sysdba</code> no estás usando un usuario, sino un <b>privilegio de administración</b> que te deja arrancar, parar y recuperar la base de datos. Existe otro más limitado, <b>SYSOPER</b>. No viene en las diapositivas, pero lo verás en SQL Developer (campo "Rol"), así que conviene saber la diferencia:</p>
   <div class="lab rv">
     <h4>¿Qué privilegios da cada uno?</h4>
     <span class="seg" id="svSel"><button type="button" data-v="sysdba" aria-pressed="true">SYSDBA</button><button type="button" data-v="sysoper">SYSOPER</button></span>
@@ -527,43 +625,148 @@ alter user system identified by "contraseña";</pre></div>
 
 <!-- 3 · PARÁMETROS DE LA BD -->
 <section class="sec" id="a-param" data-title="Parámetros de la BD" style="--c:var(--violet)">
-  <div class="sec-head rv"><div class="sec-num">03</div><div><h2>Parámetros de la base de datos</h2><p>PFILE y SPFILE, cómo copiar uno a otro, tipos de parámetros y cómo verlos y cambiarlos.</p></div></div>
+  <div class="sec-head rv"><div class="sec-num">03</div><div><h2>Parámetros de la base de datos</h2><p>Cómo es un PFILE por dentro, cómo copiar entre PFILE y SPFILE, en qué orden los busca Oracle al arrancar, tipos de parámetros, cómo cambiarlos y cómo verlos.</p></div></div>
+  <p class="rv">Un <b>parámetro</b> es una opción de configuración de la instancia: el nombre de la base de datos, el tamaño de la memoria, dónde están los ficheros de control, cuántas sesiones se permiten… Todos viven en el fichero de parámetros (PFILE o SPFILE) que vimos en el bloque 1.</p>
+
+  <h3 class="rv">El PFILE por dentro</h3>
+  <p class="rv">El PFILE nos sirve para arrancar la base de datos cuando <b>no arranca</b>, ya que el SPFILE no lo podríamos modificar. Es texto plano y cada línea es un parámetro con su valor (o una lista de valores entre paréntesis):</p>
+  <div class="code rv" data-fn="initFREE.ora" data-nohl><pre>nombreParámetro = valor
+nombreParámetro = (valor1 [,valor2 [,…]])
+
+# por ejemplo
+db_name = FREE
+control_files = ('/opt/oracle/oradata/FREE/control01.ctl', '/opt/oracle/oradata/FREE/control02.ctl')</pre></div>
+
   <h3 class="rv">Copiar entre PFILE y SPFILE</h3>
-  <p class="rv">Lo normal es usar un SPFILE, pero conviene tener siempre un PFILE de seguridad por si el sistema no arrancara y hubiera que editar algo a mano.</p>
+  <p class="rv">Lo normal es trabajar con un SPFILE, pero tener siempre a mano una copia en PFILE por si el sistema no arranca y hay que tocar algo a mano. Las copias se hacen con <code>CREATE PFILE</code> y <code>CREATE SPFILE</code>. Se lee así: <b>CREATE destino FROM origen</b>. Si no pones ruta, se usa la ubicación por defecto; y <code>FROM MEMORY</code> copia los valores que la instancia tiene <b>ahora mismo</b> en memoria.</p>
   <div class="lab rv">
     <h4>Constructor de comandos CREATE</h4>
     <div class="row">Desde <span class="seg" id="pfFrom"><button type="button" data-v="spfile" aria-pressed="true">SPFILE</button><button type="button" data-v="pfile">PFILE</button></span>
     hacia <span class="seg" id="pfTo"><button type="button" data-v="pfile" aria-pressed="true">PFILE</button><button type="button" data-v="spfile">SPFILE</button></span></div>
     <div class="term-out" id="pfOut"></div>
   </div>
-  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Comando</th><th>Operación</th></tr></thead><tbody>
-    <tr><td><code>CREATE PFILE FROM SPFILE</code></td><td>Ubicación por defecto.</td></tr>
-    <tr><td><code>CREATE PFILE='ruta' FROM SPFILE='ruta'</code></td><td>Rutas concretas para los dos ficheros.</td></tr>
-    <tr><td><code>CREATE SPFILE FROM MEMORY</code></td><td>A partir de los parámetros actualmente en memoria.</td></tr>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Crear un PFILE</th><th>Qué hace</th></tr></thead><tbody>
+    <tr><td><code>CREATE PFILE FROM SPFILE</code></td><td>PFILE a partir del SPFILE actual, en la ubicación por defecto.</td></tr>
+    <tr><td><code>CREATE PFILE='ruta' FROM SPFILE</code></td><td>Lo mismo, pero dejando el PFILE en la ruta indicada.</td></tr>
+    <tr><td><code>CREATE PFILE='ruta' FROM SPFILE='ruta'</code></td><td>Indicas las rutas de los dos ficheros.</td></tr>
+    <tr><td><code>CREATE PFILE FROM MEMORY</code></td><td>PFILE con los parámetros que hay ahora en memoria.</td></tr>
+    <tr><td><code>CREATE PFILE='ruta' FROM MEMORY</code></td><td>Lo mismo, con ruta para el PFILE.</td></tr>
   </tbody></table></div>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Crear un SPFILE</th><th>Qué hace</th></tr></thead><tbody>
+    <tr><td><code>CREATE SPFILE FROM PFILE</code></td><td>SPFILE a partir del PFILE en uso, en la ubicación por defecto.</td></tr>
+    <tr><td><code>CREATE SPFILE='ruta' FROM PFILE</code></td><td>Lo mismo, dejando el SPFILE en la ruta indicada.</td></tr>
+    <tr><td><code>CREATE SPFILE='ruta' FROM PFILE='ruta'</code></td><td>Indicas las rutas de los dos ficheros.</td></tr>
+    <tr><td><code>CREATE SPFILE FROM MEMORY</code></td><td>SPFILE con los parámetros que hay ahora en memoria.</td></tr>
+    <tr><td><code>CREATE SPFILE='ruta' FROM MEMORY</code></td><td>Lo mismo, con ruta para el SPFILE.</td></tr>
+  </tbody></table></div>
+
+  <h3 class="rv">¿Qué fichero carga Oracle al arrancar?</h3>
+  <p class="rv">Oracle busca en la carpeta de siempre (<b>Linux:</b> <code>ORACLE_HOME/dbs</code>, <b>Windows:</b> <code>ORACLE_HOME/database</code>) y usa <b>el primero que encuentre</b> en este orden. Fíjate: siempre prefiere un SPFILE antes que un PFILE, y el nombre con SID antes que el genérico.</p>
+  <ol class="pasos rv">
+    <li><div><code>spfileSID.ora</code> — SPFILE con el nombre de la instancia</div></li>
+    <li><div><code>spfile.ora</code> — SPFILE genérico</div></li>
+    <li><div><code>initSID.ora</code> — PFILE con el nombre de la instancia</div></li>
+    <li><div><code>init.ora</code> — PFILE genérico</div></li>
+  </ol>
+  <p class="rv">Si quieres saltarte ese orden y arrancar con un PFILE concreto (por ejemplo, el de emergencia), se lo dices en el propio STARTUP:</p>
+  <div class="code rv" data-fn="SQL*Plus"><pre>startup pfile='/home/oracle/initFREE_copia.ora';</pre></div>
+
   <h3 class="rv">Tipos de parámetros</h3>
+  <p class="rv">Hay dos formas de clasificarlos, y te pueden preguntar por las dos:</p>
   <div class="vs rv">
-    <div class="ok"><h5>CLASIFICACIÓN 1</h5><p>Derivados (dependen de otros) · dependientes del SO (p. ej. tamaño de bloque) · independientes.</p></div>
-    <div class="ko"><h5>CLASIFICACIÓN 2</h5><p><b>Estático</b>: hay que reiniciar para que surta efecto. <b>Dinámico</b>: se aplica al instante, a nivel de sesión o de sistema.</p></div>
+    <div class="ok"><h5>CLASIFICACIÓN 1 · DE QUÉ DEPENDE SU VALOR</h5><p><b>Derivados</b>: su valor sale de otros parámetros. <b>Dependientes del SO</b>: su valor depende del sistema operativo (p. ej. el tamaño de bloque en disco). <b>Independientes</b>: no dependen ni del SO ni de otros parámetros.</p></div>
+    <div class="ko"><h5>CLASIFICACIÓN 2 · CUÁNDO SE APLICA EL CAMBIO</h5><p><b>Estático</b>: se cambia en el fichero de parámetros (SPFILE o PFILE) y solo se aplica al <b>reiniciar</b> la instancia. <b>Dinámico</b>: se cambia con la base de datos abierta y se aplica <b>al instante</b>.</p></div>
   </div>
-  <h3 class="rv">ALTER SYSTEM y su SCOPE</h3>
+
+  <h3 class="rv">Cambiar parámetros dinámicos: sesión o sistema</h3>
+  <p class="rv">Un parámetro dinámico se puede cambiar a dos niveles:</p>
+  <div class="grid g2 rv">
+    <div class="card" style="--c:var(--sky)"><div class="ic">👤</div><h4>Nivel de sesión</h4><p>El cambio afecta <b>solo a tu sesión</b>. Cuando te desconectas, se pierde.</p></div>
+    <div class="card" style="--c:var(--violet)"><div class="ic">🌐</div><h4>Nivel de sistema</h4><p>El cambio afecta a <b>todas las sesiones</b>. Con SCOPE decides si se guarda o no.</p></div>
+  </div>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- solo para mi sesión
+alter session set parametro=valor;
+
+-- para todo el sistema
+alter system set parametro=valor
+  [COMMENTS = 'comentario'] [DEFERRED]
+  [SCOPE = {SPFILE | MEMORY | BOTH}];</pre></div>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Opción</th><th>¿Cambia ya?</th><th>¿Sobrevive a un reinicio?</th><th>Qué hace</th></tr></thead><tbody>
+    <tr><td><code>SCOPE=SPFILE</code></td><td>No</td><td>Sí</td><td>Solo escribe en el SPFILE: el efecto se ve en el siguiente arranque. Es la forma de cambiar un parámetro <b>estático</b>.</td></tr>
+    <tr><td><code>SCOPE=MEMORY</code></td><td>Sí</td><td>No</td><td>Cambia la memoria al instante, pero no toca el SPFILE: al reiniciar vuelve el valor anterior.</td></tr>
+    <tr><td><code>SCOPE=BOTH</code></td><td>Sí</td><td>Sí</td><td>Hace las dos cosas.</td></tr>
+    <tr><td><code>DEFERRED</code></td><td>—</td><td>—</td><td>El nuevo valor funcionará a partir del siguiente reinicio.</td></tr>
+  </tbody></table></div>
   <div class="lab rv">
     <h4>¿Qué hace cada SCOPE?</h4>
     <span class="seg" id="scpSel"><button type="button" data-v="spfile">SPFILE</button><button type="button" data-v="memory">MEMORY</button><button type="button" data-v="both" aria-pressed="true">BOTH</button></span>
     <div class="term-out" id="scpOut" style="margin-top:10px"></div>
   </div>
-  <h3 class="rv">Ver los parámetros</h3>
-  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Opción</th><th>Uso</th></tr></thead><tbody>
-    <tr><td><code>SHOW PARAMETER nombre</code></td><td>Valor actual, de la sesión.</td></tr>
-    <tr><td><code>SHOW SPPARAMETER nombre</code></td><td>Valor guardado en el SPFILE.</td></tr>
+  <div class="eli rv"><p><b>MEMORY</b> es apuntarlo en una pizarra: se ve ya, pero al día siguiente la han borrado. <b>SPFILE</b> es apuntarlo en la libreta: no se ve hoy, pero mañana sigue ahí. <b>BOTH</b> es apuntarlo en los dos sitios.</p></div>
+
+  <h3 class="rv">Ver el valor de los parámetros</h3>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Instrucción</th><th>Qué muestra</th></tr></thead><tbody>
+    <tr><td><code>SHOW PARAMETER nombre</code></td><td>Los valores de la sesión actual.</td></tr>
+    <tr><td><code>SHOW SPPARAMETER nombre</code></td><td>Los valores guardados en el SPFILE.</td></tr>
     <tr><td><code>V$PARAMETER</code></td><td>Vista con los valores actuales.</td></tr>
-    <tr><td><code>V$SYSTEM_PARAMETER</code></td><td>Valores que afectan a la instancia.</td></tr>
+    <tr><td><code>V$SPPARAMETER</code></td><td>Vista con los valores del SPFILE.</td></tr>
+    <tr><td><code>V$SYSTEM_PARAMETER</code></td><td>Los valores que afectan a la instancia actual.</td></tr>
+  </tbody></table></div>
+  <div class="code rv" data-fn="SQL*Plus"><pre>show parameter db_name
+show spparameter db_name
+select * from v$parameter where upper(name) like '%DB_NAME%';
+select * from v$spparameter where upper(name) like '%DB_NAME%';
+select * from v$system_parameter where upper(name) like '%DB_NAME%';</pre></div>
+  <div class="note tip rv"><div class="ni">✓</div><p><b class="t">Truco para no fallar</b>Si te preguntan cómo comprobar que un cambio con SCOPE=SPFILE se ha guardado aunque aún no se vea: <code>SHOW PARAMETER</code> te enseña el valor viejo (memoria) y <code>SHOW SPPARAMETER</code> el nuevo (fichero).</p></div>
+
+  <h3 class="rv">Algunos parámetros que conviene conocer</h3>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Parámetro</th><th>Qué guarda</th></tr></thead><tbody>
+    <tr><td class="grp" colspan="2">IDENTIDAD Y FORMATOS</td></tr>
+    <tr><td><code>DB_NAME</code></td><td>Nombre de la base de datos.</td></tr>
+    <tr><td><code>DB_DOMAIN</code></td><td>Dominio al que pertenece.</td></tr>
+    <tr><td><code>DB_UNQ_NAME</code></td><td>Nombre único, para distinguir instancias con el mismo DB_NAME en sistemas distribuidos.</td></tr>
+    <tr><td><code>COMPATIBLE</code></td><td>Versión de Oracle con la que es compatible la instancia.</td></tr>
+    <tr><td><code>NLS_DATE_FORMAT</code> · <code>NLS_NUMERIC_CHARACTERS</code> · <code>NLS_CURRENCY</code></td><td>Formato de fecha, de números y de moneda.</td></tr>
+    <tr><td><code>REMOTE_LOGIN_PASSWORDFILE</code></td><td>Si se usa fichero de contraseñas: <b>shared</b> (compartido por varias BD), <b>exclusive</b> (solo una) o <b>none</b> (ninguno).</td></tr>
+    <tr><td class="grp" colspan="2">FICHEROS Y RUTAS</td></tr>
+    <tr><td><code>CONTROL_FILES</code></td><td>Rutas de los ficheros de control (puede haber varios).</td></tr>
+    <tr><td><code>DIAGNOSTIC_DEST</code></td><td>Ruta inicial de los ficheros de log y de traza.</td></tr>
+    <tr><td><code>LOG_ARCHIVE_DEST_n</code></td><td>Dónde se guarda el histórico de redo log nº n.</td></tr>
+    <tr><td><code>DB_RECOVERY_FILE_DEST</code> · <code>_SIZE</code></td><td>Directorio de recuperación y tamaño del área Flash de recuperación.</td></tr>
+    <tr><td><code>DB_CREATE_FILE_DEST</code></td><td>Ruta de los datafiles gestionados por Oracle (por defecto NULL: ruta habitual según OFA).</td></tr>
+    <tr><td><code>DB_FILES</code></td><td>Número máximo de ficheros que Oracle puede tener abiertos.</td></tr>
+    <tr><td><code>DB_FLASH_CACHE_FILE</code> · <code>_SIZE</code></td><td>Fichero del área Flash y su tamaño.</td></tr>
+    <tr><td class="grp" colspan="2">SESIONES Y PROCESOS</td></tr>
+    <tr><td><code>SESSIONS</code></td><td>Máximo de sesiones concurrentes.</td></tr>
+    <tr><td><code>PROCESSES</code></td><td>Máximo de procesos que puede lanzar la base de datos.</td></tr>
+    <tr><td><code>SHARED_SERVERS</code></td><td>Procesos servidores que se crean al iniciar la instancia.</td></tr>
+    <tr><td><code>OPEN_CURSORS</code></td><td>Número máximo de cursores.</td></tr>
+    <tr><td class="grp" colspan="2">CHECKPOINTS</td></tr>
+    <tr><td><code>LOG_CHECKPOINT_INTERVAL</code></td><td>Bloques máximos escritos en los redo log antes de un checkpoint.</td></tr>
+    <tr><td><code>LOG_CHECKPOINT_TIMEOUT</code></td><td>Segundos máximos sin que haya un checkpoint.</td></tr>
+    <tr><td><code>LOG_CHECKPOINT_TO_ALERT</code></td><td>Si los checkpoints se apuntan en el fichero de alertas.</td></tr>
+    <tr><td class="grp" colspan="2">BLOQUES Y TRAZAS</td></tr>
+    <tr><td><code>DB_BLOCK_SIZE</code></td><td>Tamaño del bloque de Oracle (de 2 a 32 K).</td></tr>
+    <tr><td><code>MAX_DUMP_FILE_SIZE</code></td><td>Tamaño máximo (en bloques del SO) de los ficheros de traza.</td></tr>
+    <tr><td><code>BACKGROUND_DUMP_DEST</code></td><td>Dónde van el alert log y las trazas de los procesos background.</td></tr>
+    <tr><td><code>USER_DUMP_DEST</code></td><td>Dónde van las trazas de los procesos de usuario.</td></tr>
+    <tr><td><code>LOG_ARCHIVE_TRACE</code></td><td>Graba en trazas la actividad del histórico de redo log.</td></tr>
+    <tr><td class="grp" colspan="2">MEMORIA (SGA Y PGA)</td></tr>
+    <tr><td><code>SGA_MAX_SIZE</code></td><td>Tamaño máximo de la SGA.</td></tr>
+    <tr><td><code>SGA_TARGET</code></td><td>Distinto de cero: la SGA se gestiona sola. Cero: gestión manual.</td></tr>
+    <tr><td><code>SHARED_POOL_SIZE</code> · <code>LARGE_POOL_SIZE</code> · <code>JAVA_POOL_SIZE</code></td><td>Tamaño del Shared Pool, del Large Pool y del pool de Java.</td></tr>
+    <tr><td><code>DB_CACHE_SIZE</code></td><td>Tamaño de la caché de búferes de datos.</td></tr>
+    <tr><td><code>LOG_BUFFER</code></td><td>Tamaño del búfer de redo log.</td></tr>
+    <tr><td><code>DB_KEEP_CACHE_SIZE</code> · <code>DB_RECYCLE_CACHE_SIZE</code></td><td>Búfer de retención de bloques y papelera de Oracle.</td></tr>
+    <tr><td><code>STREAMS_POOL_SIZE</code></td><td>Búfer para Streams.</td></tr>
+    <tr><td><code>WORKAREA_SIZE_POLICY</code></td><td><b>manual</b> o <b>auto</b>. En manual puedes tocar SORT_AREA_SIZE, HASH_AREA_SIZE, BITMAP_MERGE_AREA_SIZE y CREATE_BITMAP_AREA_SIZE (uso de la PGA).</td></tr>
   </tbody></table></div>
 </section>
 
 <!-- 4 · CONEXIONES EXTERNAS -->
 <section class="sec" id="a-conex" data-title="Conexiones externas" style="--c:var(--sky)">
-  <div class="sec-head rv"><div class="sec-num">04</div><div><h2>Gestión de conexiones externas</h2><p>El listener, listener.ora, tnsnames.ora y sus ficheros de log.</p></div></div>
+  <div class="sec-head rv"><div class="sec-num">04</div><div><h2>Gestión de conexiones externas</h2><p>Qué hace el listener, qué hay dentro de listener.ora y tnsnames.ora, cómo se arranca, para y consulta, y dónde están sus logs.</p></div></div>
+  <p class="rv">Cuando alguien se conecta a Oracle <b>desde otra máquina</b>, no habla directamente con la base de datos: primero llama al <b>listener</b>, un programa que escucha en un puerto (el <b>1521</b>) y que hace de recepcionista: recibe la petición, comprueba a qué base de datos quiere ir y le pasa la llamada.</p>
   <div class="diagram rv">
     <svg viewBox="0 0 700 230" role="img" aria-label="Cliente, listener e instancias">
       <defs><marker id="arB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
@@ -577,41 +780,131 @@ alter user system identified by "contraseña";</pre></div>
     </svg>
     <div class="cap">El listener valida el servicio solicitado y entrega la sesión; después, cliente e instancia hablan directamente.</div>
   </div>
-  <h3 class="rv">Los ficheros de configuración</h3>
+  <ol class="pasos rv">
+    <li><div><b>El cliente pide conexión</b>: envía la petición al listener usando la dirección y el puerto configurados.</div></li>
+    <li><div><b>El listener recibe la petición</b> y comprueba qué servicio (qué base de datos) se pide.</div></li>
+    <li><div><b>El listener conecta con el servidor</b>: establece la conexión con esa instancia.</div></li>
+    <li><div><b>Entrega la sesión</b>: desde ese momento cliente y servidor hablan directamente, sin pasar por el listener.</div></li>
+  </ol>
+
+  <h3 class="rv">listener.ora: cómo escucha el listener</h3>
+  <p class="rv">Está en <code>$ORACLE_HOME/network/admin</code>. En nuestra instalación Docker, ahí no está el fichero real sino un <b>enlace</b> a <code>/opt/oracle/oradata/dbconfig/FREE/listener.ora</code>. Define tres cosas: el <b>nombre</b> del listener, la <b>máquina</b> y el <b>puerto</b> de escucha.</p>
+  <div class="code rv" data-fn="listener.ora"><pre>DEFAULT_SERVICE_LISTENER = FREE
+
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1521))
+      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))
+    )
+  )</pre></div>
   <div class="grid g2 rv">
-    <div class="card" style="--c:var(--acc)"><div class="ic">📡</div><h4>listener.ora</h4><p>En <code>$ORACLE_HOME/network/admin</code>. Define nombre, host y puerto de escucha del listener.</p></div>
-    <div class="card" style="--c:var(--violet)"><div class="ic">📒</div><h4>tnsnames.ora</h4><p>Cadenas de conexión a las distintas bases/PDBs: alias, host, puerto y <code>SERVICE_NAME</code>.</p></div>
+    <div class="card" style="--c:var(--sky)"><div class="ic">🌐</div><h4>HOST = 0.0.0.0</h4><p>La interfaz de red en la que escucha. <b>0.0.0.0</b> significa "en todas las tarjetas de red". Lo ideal en producción sería poner una <b>IP fija</b>.</p></div>
+    <div class="card" style="--c:var(--acc)"><div class="ic">🚪</div><h4>PORT = 1521</h4><p>El puerto en el que escucha las peticiones. Es el puerto por defecto de Oracle: apréndetelo.</p></div>
   </div>
+
+  <h3 class="rv">tnsnames.ora: la agenda de conexiones</h3>
+  <p class="rv">En la misma carpeta (y también como enlace a <code>…/dbconfig/FREE/tnsnames.ora</code>) está el <b>tnsnames.ora</b>, que guarda las <b>cadenas de conexión</b> a cada base de datos a la que el listener puede mandar a los usuarios. Cada entrada empieza por un <b>alias</b>, que es el nombre que escribe el usuario al conectarse.</p>
+  <div class="code rv" data-fn="tnsnames.ora"><pre>FREE =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = FREE)
+    )
+  )
+
+FREEPDB1 =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = FREEPDB1)
+    )
+  )</pre></div>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Campo</th><th>Qué significa</th></tr></thead><tbody>
+    <tr><td><code>FREE =</code> (alias)</td><td>Identificador que usa el usuario al conectarse, p. ej. <code>sqlplus sys@FREE</code>.</td></tr>
+    <tr><td><code>HOST</code></td><td>Interfaz de red en la que el listener acepta conexiones.</td></tr>
+    <tr><td><code>PORT</code></td><td>Puerto en el que escucha (1521).</td></tr>
+    <tr><td><code>SERVICE_NAME</code></td><td>Nombre real del servicio: viene a ser el nombre de la base de datos (la CDB <b>FREE</b> o la PDB <b>FREEPDB1</b>).</td></tr>
+  </tbody></table></div>
+  <div class="eli rv"><p><b>listener.ora</b> es la configuración del recepcionista: en qué puerta y en qué número de teléfono atiende. <b>tnsnames.ora</b> es la agenda: "si alguien pregunta por FREEPDB1, está en tal máquina, tal puerto, y se llama así".</p></div>
   <div class="lab rv">
     <h4>Constructor de tnsnames.ora</h4>
     <div class="row"><input type="text" id="tnAlias" value="FREEPDB1" placeholder="Alias"><input type="text" id="tnHost" value="0.0.0.0" placeholder="Host"><input type="text" id="tnPort" value="1521" placeholder="Puerto"><input type="text" id="tnSvc" value="FREEPDB1" placeholder="Service name"></div>
     <div class="term-out" id="tnOut"></div>
   </div>
-  <h3 class="rv">Arranque, parada y estado del listener</h3>
+
+  <h3 class="rv">Arrancar, parar y consultar el listener: lsnrctl</h3>
+  <p class="rv">El listener se controla con su propio programa, <b>lsnrctl</b>. Entras en él desde el terminal (como usuario oracle) y dentro usas <code>start</code>, <code>stop</code> y <code>status</code> seguidos del nombre del listener.</p>
+  <div class="code rv" data-fn="terminal"><pre>[oracle]$ lsnrctl
+LSNRCTL> status
+LSNRCTL> stop listener
+LSNRCTL> start listener</pre></div>
   <div class="lab rv">
     <h4>lsnrctl</h4>
     <div class="row" id="lsnrBtns"><button class="btn sm" type="button" data-c="status">status</button><button class="btn sm" type="button" data-c="stop">stop</button><button class="btn pri sm" type="button" data-c="start">start</button></div>
     <div class="term-out" id="lsnrOut"></div>
   </div>
-  <div class="note warn rv"><div class="ni">!</div><p><b class="t">Ojo</b>Si el listener está parado, las conexiones <b>remotas</b> fallan, pero las <b>locales</b> siguen funcionando.</p></div>
-  <h3 class="rv">Ficheros de log del listener</h3>
-  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Fichero</th><th>Contenido</th></tr></thead><tbody>
-    <tr><td><code>log.xml</code></td><td>Formato XML, en <code>.../listener/alert/</code>. Se ve con <code>tail -f log.xml</code>.</td></tr>
-    <tr><td><code>listener.log</code></td><td>Texto plano, en <code>.../listener/trace/</code>, con cada intento de conexión.</td></tr>
+  <p class="rv">El <code>status</code> con el listener arrancado te dice desde cuándo funciona, dónde está su fichero de configuración, dónde escribe su log y qué <b>servicios</b> atiende (FREE, freepdb1…, todos en estado READY). Con el listener parado, en cambio, devuelve el error típico:</p>
+  <div class="code rv" data-fn="lsnrctl status (parado)" data-nohl><pre>TNS-12541: Cannot connect. No listener at host 0.0.0.0 port 1521.
+TNS-12560: Database communication protocol error.
+TNS-00511: No listener
+Linux Error: 111: Connection refused</pre></div>
+  <div class="note warn rv"><div class="ni">!</div><p><b class="t">Pregunta trampa</b>Si paras el listener, las conexiones <b>remotas</b> dejan de funcionar, pero las <b>locales</b> (desde la propia máquina, como <code>sqlplus / as sysdba</code>) siguen funcionando, porque no pasan por él.</p></div>
+
+  <h3 class="rv">Los ficheros de log del listener</h3>
+  <p class="rv">Si el listener da problemas, miras sus logs. Para saber dónde están, haz un <code>status</code> y busca la línea <b>"Listener Log File"</b>. Hay dos ficheros:</p>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Fichero</th><th>Formato</th><th>Carpeta</th><th>Qué guarda</th></tr></thead><tbody>
+    <tr><td><code>log.xml</code></td><td>XML</td><td><code>…/listener/alert/</code></td><td>El log del listener (mensajes, conexiones, actualizaciones de servicio).</td></tr>
+    <tr><td><code>listener.log</code></td><td>Texto plano</td><td><code>…/listener/trace/</code></td><td>Fichero de trazas con cada intento de conexión hecho a través del listener.</td></tr>
   </tbody></table></div>
+  <div class="code rv" data-fn="rutas" data-nohl><pre>/opt/oracle/diag/tnslsnr/&lt;máquina_o_contenedor&gt;/listener/alert/log.xml
+/opt/oracle/diag/tnslsnr/&lt;máquina_o_contenedor&gt;/listener/trace/listener.log</pre></div>
+  <p class="rv">Se leen con <code>tail</code>: <code>tail -f</code> se queda abierto enseñando las líneas nuevas según llegan (sales con <b>Ctrl + C</b>) y <code>tail -20</code> enseña solo las últimas 20.</p>
+  <div class="code rv" data-fn="terminal"><pre>tail -f log.xml
+tail -20 listener.log</pre></div>
 </section>
 
 <!-- 5 · HERRAMIENTAS CLIENTE -->
 <section class="sec" id="a-cliente" data-title="Herramientas cliente" style="--c:var(--amber)">
-  <div class="sec-head rv"><div class="sec-num">05</div><div><h2>Configurar herramientas cliente</h2><p>Qué necesita cualquier programa para conectarse, y cómo darlo de alta en Oracle Client o SQL Developer.</p></div></div>
+  <div class="sec-head rv"><div class="sec-num">05</div><div><h2>Configurar herramientas cliente</h2><p>Qué necesita cualquier programa para conectarse a Oracle, y cómo se configura con Oracle Client o directamente en SQL Developer.</p></div></div>
+  <p class="rv">Da igual que sea SQL*Plus, SQL Developer o una aplicación Java: para conectarse a la base de datos, <b>cualquier programa necesita dos cosas</b>.</p>
   <div class="grid g2 rv">
-    <div class="card" style="--c:var(--amber)"><div class="ic">🧩</div><h4>Cadena de conexión</h4><p>Host, puerto y <code>SERVICE_NAME</code> (el nombre real de la BD), tal como aparecen en <code>tnsnames.ora</code>.</p></div>
-    <div class="card" style="--c:var(--violet)"><div class="ic">🔌</div><h4>Driver específico</h4><p>El software que habla el protocolo Oracle Net: el propio Oracle Client, o el driver JDBC/ODBC integrado en una aplicación.</p></div>
+    <div class="card" style="--c:var(--amber)"><div class="ic">🧩</div><h4>1. La cadena de conexión</h4><p>Los datos para encontrar la base de datos: <b>host</b> (IP de la máquina), <b>puerto</b> (en el que escucha) y <b>SID / nombre del servicio</b> (el nombre de la BD). Están en el <code>tnsnames.ora</code> del servidor.</p></div>
+    <div class="card" style="--c:var(--violet)"><div class="ic">🔌</div><h4>2. El driver</h4><p>El software que sabe "hablar" con Oracle. Puede ser el propio <b>Oracle Client</b> o el driver que ya trae el programa (SQL Developer lleva el suyo).</p></div>
   </div>
-  <h3 class="rv">Oracle Client frente a SQL Developer</h3>
+  <div class="eli rv"><p>Para llamar a alguien necesitas su <b>número</b> (la cadena de conexión) y un <b>teléfono</b> (el driver). Sin cualquiera de las dos cosas, no hay llamada.</p></div>
+
+  <h3 class="rv">Opción A: Oracle Client</h3>
+  <p class="rv">Oracle tiene un software cliente que instala herramientas para trabajar contra la base de datos (SQL*Plus, SQL Developer, etc.). Se configura así:</p>
+  <ol class="pasos rv">
+    <li><div>Descargas el software cliente desde la web de Oracle.</div></li>
+    <li><div>Lo instalas eligiendo los productos que quieres.</div></li>
+    <li><div>Configuras el <b>tnsnames.ora de la instalación del cliente</b> con los datos de la base de datos a la que te quieres conectar.</div></li>
+  </ol>
+  <div class="code rv" data-fn="tnsnames.ora (cliente)"><pre>FREE =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = FREE)
+    )
+  )</pre></div>
+
+  <h3 class="rv">Opción B: solo SQL Developer</h3>
+  <p class="rv">Si no has instalado Oracle Client pero sí has descargado <b>SQL Developer</b> (que <b>no necesita instalación</b>), la cadena de conexión se da de alta <b>dentro del propio programa</b>: botón verde <b>+</b> (Nueva conexión) en el panel de Conexiones, y rellenas el formulario.</p>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Campo del formulario</th><th>Ejemplo (sys a la PDB)</th><th>Qué es</th></tr></thead><tbody>
+    <tr><td>Name</td><td>FREEPDB1 Sys</td><td>Nombre que le das tú a la conexión.</td></tr>
+    <tr><td>Usuario / Contraseña</td><td>sys / ••••••</td><td>Con quién te conectas.</td></tr>
+    <tr><td>Rol</td><td>SYSDBA</td><td>Obligatorio para SYS. Para usuarios normales, "Por defecto".</td></tr>
+    <tr><td>Nombre del host</td><td>localhost</td><td>Máquina donde está Oracle.</td></tr>
+    <tr><td>Puerto</td><td>1521</td><td>Puerto del listener.</td></tr>
+    <tr><td>SID / Nombre del servicio</td><td>Nombre del servicio: freepdb1</td><td>Para conectarte a una <b>PDB</b> usa siempre "Nombre del servicio".</td></tr>
+  </tbody></table></div>
   <div class="vs rv">
-    <div class="ok"><h5>ORACLE CLIENT</h5><p>Se instala; incluye SQL*Plus, SQL Developer y otros. Hay que configurar su <code>tnsnames.ora</code>.</p></div>
-    <div class="ko"><h5>SQL DEVELOPER SOLO</h5><p>No requiere instalación: la cadena de conexión se da de alta directamente en el propio programa.</p></div>
+    <div class="ok"><h5>ORACLE CLIENT</h5><p>Hay que <b>instalarlo</b>. Trae SQL*Plus, SQL Developer y más. La conexión se configura en <b>su tnsnames.ora</b>.</p></div>
+    <div class="ko"><h5>SQL DEVELOPER SOLO</h5><p><b>No se instala</b>. La conexión se da de alta en el <b>propio programa</b>, con host, puerto y servicio.</p></div>
   </div>
   <div class="lab rv">
     <h4>Dar de alta una conexión en SQL Developer</h4>
@@ -623,76 +916,222 @@ alter user system identified by "contraseña";</pre></div>
 
 <!-- 6 · DICCIONARIO DE DATOS -->
 <section class="sec" id="a-dicc" data-title="Diccionario de datos" style="--c:var(--violet)">
-  <div class="sec-head rv"><div class="sec-num">06</div><div><h2>El diccionario de datos</h2><p>Tablas base y vistas, los prefijos USER_/ALL_/DBA_/V$, y algunos ejemplos clásicos.</p></div></div>
-  <p class="rv">El diccionario de datos es el conjunto de tablas y vistas que almacena toda la información sobre los objetos de la BD: definiciones, espacio ocupado, integridad, usuarios, privilegios, roles, auditoría, etc.</p>
+  <div class="sec-head rv"><div class="sec-num">06</div><div><h2>El diccionario de datos</h2><p>Qué es, cómo está hecho (tablas base y vistas), los prefijos USER_, ALL_, DBA_ y V$, las vistas más útiles de cada grupo y consultas de ejemplo.</p></div></div>
+  <p class="rv">El diccionario de datos es el conjunto de <b>tablas y vistas</b> donde Oracle guarda <b>toda la información sobre sí mismo</b>: los objetos que forman la base de datos y su estructura lógica y física. Por ejemplo:</p>
+  <div class="grid g3 rv">
+    <div class="card" style="--c:var(--violet)"><div class="ic">📦</div><h4>Objetos</h4><p>La definición de tablas, vistas, índices, sinónimos, secuencias, procedimientos, funciones, paquetes, triggers…</p></div>
+    <div class="card" style="--c:var(--sky)"><div class="ic">📏</div><h4>Espacio e integridad</h4><p>El espacio que ocupa cada objeto y las restricciones de integridad.</p></div>
+    <div class="card" style="--c:var(--rose)"><div class="ic">🔐</div><h4>Seguridad</h4><p>Usuarios, privilegios, roles y los segmentos de auditoría del sistema.</p></div>
+  </div>
+  <div class="eli rv"><p>Es la "base de datos sobre la base de datos". Si quieres saber qué tablas tiene SCOTT, qué usuarios existen o en qué estado está la instancia, no lo buscas en ningún fichero: <b>se lo preguntas al diccionario con un SELECT</b>.</p></div>
+
+  <h3 class="rv">Cómo está hecho: tablas base y vistas</h3>
   <div class="tree rv">
     <div class="fam" style="--c:var(--violet)"><h4>Tablas base <span class="tag" style="--c:var(--violet)">codificadas</span></h4><ul>
-      <li><code>•</code><span>Se crean automáticamente al crear la BD.</span></li>
-      <li><code>•</code><span>Contienen de verdad la información del diccionario.</span></li></ul></div>
+      <li><code>•</code><span>Se crean automáticamente al crear la base de datos.</span></li>
+      <li><code>•</code><span>Son las que de verdad contienen la información, pero codificada (no se leen bien).</span></li></ul></div>
     <div class="fam" style="--c:var(--acc)"><h4>Vistas <span class="tag" style="--c:var(--acc)">legibles</span></h4><ul>
-      <li><code>•</code><span>Se crean al lanzar <code>catalog.sql</code>.</span></li>
-      <li><code>•</code><span>Dan acceso legible a las tablas base.</span></li></ul></div>
+      <li><code>•</code><span>Se crean al lanzar el script <b>catalog.sql</b>.</span></li>
+      <li><code>•</code><span>Traducen la información de las tablas base a algo legible. Son las que consultamos.</span></li></ul></div>
   </div>
-  <h3 class="rv">Más permisos según el prefijo</h3>
+
+  <h3 class="rv">Los prefijos: cuánto ves según la vista</h3>
+  <p class="rv">Casi todas las vistas existen en tres versiones con el mismo nombre y distinto prefijo. El prefijo decide <b>qué objetos te enseña</b>: de menos a más permisos.</p>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Prefijo</th><th>Qué muestra</th><th>Quién puede usarla</th></tr></thead><tbody>
+    <tr><td><code>USER_</code></td><td>Los objetos que son <b>tuyos</b> (del usuario que consulta).</td><td>Cualquier usuario</td></tr>
+    <tr><td><code>ALL_</code></td><td>Los objetos a los que <b>tienes acceso</b>, sean tuyos o no.</td><td>Cualquier usuario</td></tr>
+    <tr><td><code>DBA_</code></td><td><b>Todos</b> los objetos de la base de datos.</td><td>Solo usuarios con permisos de administración</td></tr>
+    <tr><td><code>V$</code></td><td>Tablas <b>dinámicas</b>: información que cambia mientras la BD funciona. Se crean al arrancar la instancia, viven en memoria y su contenido <b>desaparece al cerrarla</b>.</td><td>Administradores</td></tr>
+  </tbody></table></div>
   <div class="lab rv">
     <h4>Elige objeto y alcance</h4>
     <div class="row">Objeto <span class="seg" id="dcObj"><button type="button" data-v="TABLES" aria-pressed="true">TABLES</button><button type="button" data-v="VIEWS">VIEWS</button><button type="button" data-v="INDEXES">INDEXES</button><button type="button" data-v="TRIGGERS">TRIGGERS</button></span></div>
     <div class="row">Alcance <span class="seg" id="dcScope"><button type="button" data-v="user" aria-pressed="true">USER_</button><button type="button" data-v="all">ALL_</button><button type="button" data-v="dba">DBA_</button><button type="button" data-v="v">V$</button></span></div>
     <div class="term-out" id="dcOut"></div>
   </div>
-  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Vista USER_/ALL_/DBA_</th><th>Contiene</th></tr></thead><tbody>
-    <tr><td><code>OBJECTS</code></td><td>Objetos de esquema.</td></tr>
-    <tr><td><code>TABLES</code> / <code>TAB_COLUMNS</code></td><td>Tablas y sus columnas.</td></tr>
-    <tr><td><code>CONSTRAINTS</code> / <code>CONS_COLUMNS</code></td><td>Restricciones y columnas implicadas.</td></tr>
-    <tr><td><code>VIEWS</code> · <code>TRIGGERS</code> · <code>SEQUENCES</code> · <code>SYNONYMS</code></td><td>El resto de objetos del esquema.</td></tr>
-    <tr><td><code>TABLESPACES</code> · <code>SEGMENTS</code> · <code>EXTENTS</code></td><td>Espacio físico ocupado.</td></tr>
-    <tr><td><code>SYS_PRIVS</code> · <code>TAB_PRIVS</code> · <code>ROLES_SYS_PRIVS</code></td><td>Privilegios y roles.</td></tr>
+  <div class="eli rv"><p><b>USER_</b> es tu cajón. <b>ALL_</b> son los cajones que te han dejado abrir. <b>DBA_</b> es el archivo entero de la empresa. <b>V$</b> es la pantalla de "en directo": lo que está pasando ahora mismo, y se borra al apagar.</p></div>
+
+  <h3 class="rv">Vistas USER_, ALL_ y DBA_ (información almacenada)</h3>
+  <p class="rv">Ponle delante el prefijo que quieras: <code>USER_TABLES</code>, <code>ALL_TABLES</code>, <code>DBA_TABLES</code>…</p>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Vista</th><th>Contiene</th></tr></thead><tbody>
+    <tr><td class="grp" colspan="2">OBJETOS Y TABLAS</td></tr>
+    <tr><td><code>OBJECTS</code></td><td>Objetos del esquema.</td></tr>
+    <tr><td><code>CATALOG</code></td><td>Lista de tablas, vistas, sinónimos y secuencias.</td></tr>
+    <tr><td><code>TABLES</code> · <code>TAB_COLUMNS</code></td><td>Tablas y sus columnas.</td></tr>
+    <tr><td><code>UNUSED_COL_TABS</code></td><td>Columnas sin uso.</td></tr>
+    <tr><td><code>CONSTRAINTS</code> · <code>CONS_COLUMNS</code></td><td>Restricciones y las columnas implicadas.</td></tr>
+    <tr><td class="grp" colspan="2">OTROS OBJETOS</td></tr>
+    <tr><td><code>VIEWS</code> · <code>TRIGGERS</code> · <code>SEQUENCES</code> · <code>SYNONYMS</code></td><td>Vistas, triggers, secuencias y sinónimos.</td></tr>
+    <tr><td><code>INDEXES</code> · <code>INDEXTYPES</code></td><td>Índices y tipos de índice.</td></tr>
+    <tr><td><code>TYPES</code> · <code>VARRAYS</code></td><td>Tipos definidos y datos de tipo VARRAY.</td></tr>
+    <tr><td><code>DEPENDENCIES</code></td><td>Dependencias de procedimientos, funciones y triggers.</td></tr>
+    <tr><td class="grp" colspan="2">ESPACIO</td></tr>
+    <tr><td><code>TABLESPACES</code> · <code>SEGMENTS</code> · <code>EXTENTS</code></td><td>Tablespaces, segmentos y extensiones.</td></tr>
+    <tr><td><code>FREE_SPACE</code></td><td>Extensiones libres en cada tablespace.</td></tr>
+    <tr><td class="grp" colspan="2">PRIVILEGIOS, AUDITORÍA Y FLASHBACK</td></tr>
+    <tr><td><code>SYS_PRIVS</code> · <code>TAB_PRIVS</code> · <code>ROLES_SYS_PRIVS</code></td><td>Privilegios de usuario, de objetos y de roles.</td></tr>
+    <tr><td><code>AUDIT_SESSIONS</code></td><td>Auditoría de sesiones.</td></tr>
+    <tr><td><code>FLASHBACK_ARCHIVE</code> (y <code>_TABLES</code>, <code>_TS</code>)</td><td>Repositorio Flashback, tablas y tablespaces en modo Flashback.</td></tr>
   </tbody></table></div>
-  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Vista V$</th><th>Contiene</th></tr></thead><tbody>
-    <tr><td><code>V$INSTANCE</code> / <code>V$DATABASE</code></td><td>Estado de la instancia / información de la BD activa.</td></tr>
-    <tr><td><code>V$PARAMETER</code> / <code>V$SPPARAMETER</code></td><td>Parámetros en uso / guardados en el SPFILE.</td></tr>
-    <tr><td><code>V$SESSION</code> / <code>V$PROCESS</code></td><td>Sesiones activas / procesos del sistema operativo.</td></tr>
-    <tr><td><code>V$CONTROLFILE</code> / <code>V$DATAFILE</code> / <code>V$LOGFILE</code></td><td>Archivos de control / datos / redo log.</td></tr>
+
+  <h3 class="rv">Vistas que solo existen como DBA_</h3>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Vista</th><th>Contiene</th></tr></thead><tbody>
+    <tr><td><code>DICTIONARY</code></td><td>La lista de todas las vistas del diccionario (la "vista de las vistas").</td></tr>
+    <tr><td><code>DBA_USERS</code> · <code>DBA_ROLES</code> · <code>DBA_PROFILES</code> · <code>DBA_TS_QUOTAS</code></td><td>Usuarios, roles, perfiles y cuotas.</td></tr>
+    <tr><td><code>DBA_DATAFILES</code> · <code>DBA_TEMP_FILES</code></td><td>Ficheros de datos (y a qué tablespace pertenecen) y temporales.</td></tr>
+    <tr><td><code>DBA_DIRECTORIES</code> · <code>DBA_TABLESPACE_GROUPS</code> · <code>DBA_TEMP_FREE_SPACE</code></td><td>Directorios, grupos de tablespaces y espacio libre temporal.</td></tr>
+    <tr><td><code>DBA_ROLLBACK_SEGS</code> · <code>DBA_UNDO_EXTENTS</code> · <code>DBA_HIST_UNDOSTAT</code></td><td>Segmentos de rollback y espacio de deshacer (undo).</td></tr>
+    <tr><td><code>DBA_PART_TABLES</code> · <code>DBA_RECYCLE_BIN</code></td><td>Tablas particionadas y papelera del sistema.</td></tr>
+    <tr><td><code>DBA_THRESHOLD</code> · <code>DBA_OUTSTANDING_ALERTS</code> · <code>DBA_ALERT_HISTORY</code></td><td>Umbrales, alertas pendientes e historial de alertas.</td></tr>
+    <tr><td><code>DBA_BLOCKERS</code> · <code>DBA_WAITERS</code> · <code>DBA_LOCKS</code></td><td>Quién bloquea, quién espera y todos los bloqueos (también DDL_LOCKS y DML_LOCKS).</td></tr>
+    <tr><td><code>DBA_ERRORS</code> · <code>DBA_AUDIT_POLICIES</code> · <code>DBA_OBJ_AUDIT_OPT</code></td><td>Errores guardados y opciones de auditoría.</td></tr>
+    <tr><td><code>DBA_IND_COLUMNS</code> · <code>DBA_IND_STATS</code> · <code>DBA_RULES</code> · <code>DBA_SERVICES</code></td><td>Columnas y estadísticas de índices, reglas y servicios.</td></tr>
   </tbody></table></div>
+
+  <h3 class="rv">Vistas V$ (información dinámica)</h3>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Vista</th><th>Contiene</th></tr></thead><tbody>
+    <tr><td class="grp" colspan="2">INSTANCIA</td></tr>
+    <tr><td><code>V$INSTANCE</code></td><td>Estado de la instancia.</td></tr>
+    <tr><td><code>V$DATABASE</code></td><td>Información de la base de datos activa.</td></tr>
+    <tr><td><code>V$PARAMETER</code> · <code>V$SYSTEM_PARAMETER</code> · <code>V$SPPARAMETER</code></td><td>Parámetros en uso, del sistema y del SPFILE.</td></tr>
+    <tr><td class="grp" colspan="2">SESIONES Y PROCESOS</td></tr>
+    <tr><td><code>V$SESSION</code> · <code>V$PROCESS</code></td><td>Sesiones activas y procesos activos.</td></tr>
+    <tr><td><code>V$SESS_IO</code> · <code>V$SYSSTAT</code></td><td>Estadísticas de E/S por usuario y de sesión.</td></tr>
+    <tr><td><code>V$SESSION_LONGOPS</code></td><td>Operaciones que tardan más de 6 segundos.</td></tr>
+    <tr><td><code>V$RESOURCE_LIMIT</code> · <code>V$SESSION_WAIT_HISTORY</code></td><td>Uso de recursos y los 10 últimos eventos de espera por sesión.</td></tr>
+    <tr><td class="grp" colspan="2">MEMORIA</td></tr>
+    <tr><td><code>V$SGA</code> · <code>V$SGAINFO</code> · <code>V$SGASTAT</code></td><td>Estadísticas, tamaños y uso de los componentes de la SGA.</td></tr>
+    <tr><td><code>V$SQLAREA</code> · <code>V$PGASTAT</code></td><td>Área compartida de SQL (Shared Pool) y uso de la PGA.</td></tr>
+    <tr><td class="grp" colspan="2">FICHEROS</td></tr>
+    <tr><td><code>V$CONTROLFILE</code></td><td>Ficheros de control.</td></tr>
+    <tr><td><code>V$LOG</code> · <code>V$LOGFILE</code> · <code>V$ARCHIVED_LOG</code></td><td>Redo log, sus grupos y miembros, e históricos archivados.</td></tr>
+    <tr><td><code>V$TABLESPACE</code> · <code>V$DATAFILE</code> · <code>V$TEMPFILE</code></td><td>Tablespaces, ficheros de datos y temporales.</td></tr>
+    <tr><td class="grp" colspan="2">TRAZAS, MÉTRICAS Y BLOQUEOS</td></tr>
+    <tr><td><code>V$DIAG_INFO</code> · <code>V$ALERT_TYPES</code></td><td>Dónde están los ficheros de traza, y tipos de alertas.</td></tr>
+    <tr><td><code>V$METRIC</code> · <code>V$METRICNAME</code> · <code>V$METRIC_HISTORY</code></td><td>Métricas del sistema.</td></tr>
+    <tr><td><code>V$LOCK</code> · <code>V$SESSION_WAIT</code></td><td>Bloqueos y último estado de espera.</td></tr>
+  </tbody></table></div>
+
   <h3 class="rv">¿En qué estado funciona cada vista?</h3>
+  <p class="rv">Como las V$ viven en memoria, algunas ya responden con la instancia en NOMOUNT, mientras que las DBA_ necesitan la base de datos abierta. Pruébalo con el estado que dejaste en el simulador de arranque del bloque 1:</p>
   <div class="lab rv">
     <h4>Prueba una consulta (usa el estado del laboratorio de arranque, arriba)</h4>
     <div class="row"><select id="dsSel"><option value="v$instance">select * from v$instance;</option><option value="v$parameter">select * from v$parameter;</option><option value="v$controlfile">select * from v$controlfile;</option><option value="v$datafile">select * from v$datafile;</option><option value="dba_users">select * from dba_users;</option><option value="dba_tables">select * from dba_tables;</option><option value="user_objects">select * from user_objects;</option></select></div>
     <div class="term-out" id="dsOut"></div>
   </div>
-  <h3 class="rv">Ejemplos clásicos</h3>
-  <div class="code rv" data-fn="SQL*Plus"><pre>desc nombre_vista;
+
+  <h3 class="rv">Consultas de ejemplo</h3>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- ver los campos de una vista o tabla
+desc nombre_vista;
+
+-- información de la base de datos activa
 select * from v$database;
+
+-- tablas, índices y secuencias de un usuario
 select table_name from dba_tables where owner = 'SCOTT';
+select table_name, index_name from dba_indexes where owner = 'SCOTT';
+select sequence_name from dba_sequences where sequence_owner = 'SCOTT';
+
+-- tablas y vistas del usuario actual
 select * from user_catalog;
+
+-- todos los objetos del usuario (vistas, funciones, índices, triggers…)
 select * from user_objects;</pre></div>
+  <div class="note info rv"><div class="ni">i</div><p><b class="t">Ojo con las mayúsculas</b>Oracle guarda los nombres en MAYÚSCULAS, así que el filtro va con <code>'SCOTT'</code>, no con <code>'scott'</code>. Y fíjate que en DBA_SEQUENCES la columna es <b>SEQUENCE_OWNER</b>, no OWNER.</p></div>
 </section>
 
 <!-- 7 · TRAZAS Y LOGS -->
 <section class="sec" id="a-traza" data-title="Trazas y logs" style="--c:var(--rose)">
-  <div class="sec-head rv"><div class="sec-num">07</div><div><h2>Trazas en usuarios y ficheros de log</h2><p>El alert log, las trazas de los procesos background y cómo activarlas en una sesión de usuario.</p></div></div>
-  <h3 class="rv">El alert_&lt;SID&gt;.log</h3>
-  <p class="rv">Registra en orden cronológico errores internos, operaciones de administración (STARTUP, SHUTDOWN, CREATE, ALTER…) y cambios en parámetros principales.</p>
-  <div class="code rv" data-fn="SQL*Plus"><pre>select * from v$diag_info where name like '%Alert%';
-select * from v$diag_info where name = 'Diag Trace';</pre></div>
+  <div class="sec-head rv"><div class="sec-num">07</div><div><h2>Trazas en usuarios y ficheros de log</h2><p>Las trazas de los procesos background, el alert log, cómo activar la traza de una sesión de usuario (desde el propio usuario o desde un DBA) y cómo leerla con tkprof.</p></div></div>
+  <p class="rv">Una <b>traza</b> es un fichero donde Oracle va apuntando lo que pasa, para que luego podamos averiguar <b>qué ha fallado</b> o <b>qué ha hecho</b> alguien. Hay de tres tipos: las de los procesos en segundo plano, el alert log de la instancia y las trazas de las sesiones de usuario.</p>
+
   <h3 class="rv">Trazas de los procesos background</h3>
+  <p class="rv">Cada proceso en segundo plano tiene su <b>fichero de traza</b>: si falla, ahí queda la información del error. Como administradores, hay que revisarlos de vez en cuando.</p>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- qué fichero de traza tiene cada proceso
+select pid, program, tracefile from v$process;</pre></div>
+  <div class="grid g2 rv">
+    <div class="card" style="--c:var(--rose)"><div class="ic">🏷️</div><h4>Nombre</h4><p>El nombre del proceso que lo creó más la extensión <b>.trc</b>.</p></div>
+    <div class="card" style="--c:var(--sky)"><div class="ic">📁</div><h4>Ubicación</h4><p>La carpeta del parámetro <b>BACKGROUND_DUMP_DEST</b> (en el init.ora) o la de <b>DIAGNOSTIC_DEST</b> si se usa el repositorio de diagnóstico.</p></div>
+  </div>
   <div class="lab rv">
     <h4>¿Qué proceso genera cada traza?</h4>
     <div class="row"><select id="trSel"><option value="PMON">PMON</option><option value="SMON">SMON</option><option value="DBWR">DBWR</option><option value="LGWR">LGWR</option><option value="CKPT">CKPT</option><option value="ARCH">ARCH</option><option value="RECO">RECO</option></select></div>
     <div class="term-out" id="trOut"></div>
   </div>
-  <h3 class="rv">Trazar una sesión de usuario</h3>
-  <div class="grid g2 rv">
-    <div class="card" style="--c:var(--acc)"><div class="ic">👤</div><h4>Desde el propio usuario</h4><p>Activa su traza con <code>DBMS_MONITOR</code> (necesita <code>grant execute</code> de SYS primero).</p></div>
-    <div class="card" style="--c:var(--sky)"><div class="ic">🕵️</div><h4>Desde un administrador</h4><p>Con el <code>SID</code> y <code>SERIAL#</code> de <code>V$SESSION</code>, puede activar la traza de otra sesión.</p></div>
-  </div>
-  <div class="code rv" data-fn="SQL*Plus"><pre>-- desde el propio usuario (SYS le dio permiso antes)
-exec dbms_monitor.session_trace_enable(waits=>true, binds=>false);
 
--- desde un administrador, sobre otra sesión
-select sid, serial#, username from v$session;
-exec dbms_monitor.session_trace_enable(session_id=>SID, serial_num=>SERIAL#);</pre></div>
-  <h3 class="rv">Leer el fichero .trc</h3>
+  <h3 class="rv">El alert_&lt;SID&gt;.log</h3>
+  <p class="rv">Es el "diario" de la instancia: apunta <b>en orden cronológico</b> todo lo importante que le pasa a la base de datos.</p>
+  <div class="grid g3 rv">
+    <div class="card" style="--c:var(--rose)"><div class="ic">💥</div><h4>Errores internos</h4><p>Bloqueos de la instancia, datos corruptos…</p></div>
+    <div class="card" style="--c:var(--acc)"><div class="ic">⚙️</div><h4>Operaciones de administración</h4><p>STARTUP, SHUTDOWN, CREATE, ALTER…</p></div>
+    <div class="card" style="--c:var(--violet)"><div class="ic">🎛️</div><h4>Cambios de parámetros</h4><p>Las modificaciones de los parámetros principales.</p></div>
+  </div>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- dónde está el alert log
+select * from v$diag_info where name like '%Alert%';
+
+-- dónde están los ficheros de traza
+select * from v$diag_info where name = 'Diag Trace';</pre></div>
+  <p class="rv">El tamaño máximo de los logs y trazas lo marca <b>MAX_DUMP_FILE_SIZE</b> (en bloques del SO). Por defecto vale <b>unlimited</b>, sin límite.</p>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Vista útil</th><th>Para qué</th></tr></thead><tbody>
+    <tr><td><code>V$DIAG_CRITICAL_ERROR</code></td><td>Errores críticos designados por Oracle.</td></tr>
+    <tr><td><code>DBA_ALERT_HISTORY</code></td><td>Historial de alertas.</td></tr>
+    <tr><td><code>DBA_OUTSTANDING_ALERTS</code></td><td>Alertas destacadas.</td></tr>
+    <tr><td><code>V$ALERT_TYPES</code></td><td>Grupos y tipos de alertas.</td></tr>
+  </tbody></table></div>
+
+  <h3 class="rv">Trazar una sesión de usuario</h3>
+  <p class="rv">Si activas la traza en la sesión de un usuario, Oracle genera un fichero con <b>todas las sentencias SQL que ejecuta</b>. Sirve para analizar sentencias que van mal o lentas, sacar estadísticas, etc. Luego ese fichero se lee con <b>tkprof</b> o con <b>SQL Developer</b>. Se puede activar de dos maneras:</p>
+  <div class="vs rv">
+    <div class="ok"><h5>DESDE EL PROPIO USUARIO</h5><p>El usuario activa la traza de <b>su</b> sesión. Antes, SYS tiene que darle permiso sobre DBMS_MONITOR.</p></div>
+    <div class="ko"><h5>DESDE UN ADMINISTRADOR</h5><p>Un DBA activa la traza de la sesión de <b>otro</b> usuario, identificándola por su SID y su SERIAL#.</p></div>
+  </div>
+
+  <h4 class="rv" style="margin-top:22px">A) Desde el propio usuario</h4>
+  <ol class="pasos rv">
+    <li><div><b>SYS le da permiso</b> para usar el paquete DBMS_MONITOR.</div></li>
+    <li><div>(Opcional) El usuario <b>le pone una etiqueta</b> a su fichero de traza con TRACEFILE_IDENTIFIER, para encontrarlo fácil.</div></li>
+    <li><div>Consulta <b>cómo se llama</b> su fichero de traza.</div></li>
+    <li><div><b>Activa</b> la traza, trabaja, y la <b>desactiva</b>.</div></li>
+  </ol>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- 1) como SYS
+grant execute on dbms_monitor to USUARIO;
+
+-- 2) como el usuario: etiqueta para el nombre del fichero
+alter session set tracefile_identifier = 'identificador';
+
+-- 3) nombre del fichero de traza de mi sesión
+select value from v$diag_info where name = 'Default Trace File';
+
+-- 4) activar y desactivar
+execute dbms_monitor.session_trace_enable(waits => true, binds => false);
+execute dbms_monitor.session_trace_disable;</pre></div>
+
+  <h4 class="rv" style="margin-top:22px">B) Desde un usuario administrador</h4>
+  <ol class="pasos rv">
+    <li><div>Con el usuario <b>conectado</b> (su sesión tiene que estar abierta), buscas en V$SESSION su <b>PADDR</b>, su <b>SID</b> y su <b>SERIAL#</b>.</div></li>
+    <li><div>Con el PADDR sacas de V$PROCESS el <b>nombre de su fichero de traza</b> (mientras no cierre la sesión).</div></li>
+    <li><div><b>Activas</b> la traza indicando su SID y SERIAL#, y al terminar la <b>desactivas</b> igual.</div></li>
+  </ol>
+  <div class="code rv" data-fn="SQL*Plus"><pre>-- 1) identificar la sesión
+select paddr, sid, serial#, username from v$session;
+
+-- 2) su fichero de traza
+select tracefile from v$process where addr = PADDR;
+
+-- 3) activar y desactivar
+execute dbms_monitor.session_trace_enable(session_id => SID, serial_num => SERIAL#, waits => true, binds => false);
+execute dbms_monitor.session_trace_disable(session_id => SID, serial_num => SERIAL#);</pre></div>
+  <div class="eli rv"><p>El <b>SID</b> es el número de la sesión y el <b>SERIAL#</b> su número de serie: juntos identifican una sesión sin confusión (un SID se puede reutilizar cuando alguien se desconecta, el par SID + SERIAL# no). El <b>PADDR</b> es la dirección de su proceso, y sirve para encontrar su fichero en V$PROCESS.</p></div>
+
+  <h3 class="rv">Leer el fichero .trc con tkprof</h3>
+  <p class="rv">El .trc en bruto es difícil de leer. <b>tkprof</b> lo convierte en un informe legible. Desde un terminal, como usuario oracle, te vas a la carpeta donde se generó la traza y ejecutas:</p>
+  <div class="code rv" data-fn="terminal"><pre>tkprof fichero_traza.trc salida_traza.txt explain=usuario/contraseña sys=no</pre></div>
+  <div class="tbl tscroll rv"><table class="tbl"><thead><tr><th>Parte</th><th>Qué es</th></tr></thead><tbody>
+    <tr><td><code>fichero_traza.trc</code></td><td>La traza que quieres leer (entrada).</td></tr>
+    <tr><td><code>salida_traza.txt</code></td><td>El informe legible que se genera (salida).</td></tr>
+    <tr><td><code>explain=usuario/contraseña</code></td><td>Añade el plan de ejecución de cada sentencia, conectándose con ese usuario.</td></tr>
+    <tr><td><code>sys=no</code></td><td>No incluye las sentencias internas que lanza el propio SYS, para que el informe solo tenga las del usuario.</td></tr>
+  </tbody></table></div>
   <div class="lab rv">
     <h4>Constructor de tkprof</h4>
     <div class="row"><label><input type="checkbox" id="tkSys"> incluir SYS en el EXPLAIN PLAN</label></div>
