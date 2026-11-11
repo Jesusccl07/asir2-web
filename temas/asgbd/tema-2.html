@@ -726,6 +726,69 @@ exec dbms_monitor.session_trace_enable(session_id=>SID, serial_num=>SERIAL#);</p
   <h2 class="rv" style="margin:40px 0 10px">Chuleta de comandos</h2>
   <div class="tbl tscroll rv"><table class="tbl" id="cheat"><thead><tr><th>Comando</th><th>Dónde</th><th>Para qué</th></tr></thead><tbody></tbody></table></div>
 
+  <h2 class="rv" style="margin:40px 0 10px">Tu chuleta para el examen</h2>
+  <p class="rv muted" style="max-width:62ch">Si en el examen deja llevar una hoja de apuntes, esto es lo que yo escribiría a mano: lo justo para no quedarme en blanco, sin desarrollar nada. Cópialo y recórtalo a tu letra.</p>
+  <div class="code rv" data-fn="chuleta.txt" data-nohl><pre>1· ARRANQUE Y PARADA
+PFILE init&lt;SID&gt;.ora = texto, no vale pa RMAN, tiene que estar en la máquina
+SPFILE spfile&lt;SID&gt;.ora = binario, arranque remoto, guarda ALTER SYSTEM (9i+)
+show parameter spfile  → dónde está
+
+Estados CDB (cada uno añade un paso):
+NOMOUNT → lee parámetros, crea SGA, procesos background, abre alert log
+MOUNT   → abre control file, localiza datafiles y redo log
+OPEN    → abre datafiles/redo log, accesible a todos (SMON recovery si falla)
+
+Parada:
+NORMAL / TRANSACTIONAL / IMMEDIATE → checkpoint y cierre limpio
+ABORT → sin checkpoint, sin cerrar nada, recovery obligado al arrancar
+
+PDB: alter pluggable database X open/close;  (o startup/shutdown conectado a ella)
+Modos: OPEN · OPEN READ ONLY · RESTRICTED · OPEN UPGRADE · OPEN FORCE(=abort+reinicia)
+alter pluggable database all open except (pdb1,pdb2);
+
+2· CUENTAS DE ADMINISTRADOR
+SYS    (pass por defecto: change_on_install) → dueño del diccionario, arranca/para la BD
+SYSTEM (pass por defecto: manager)           → DBA del día a día (usuarios, tablespaces…)
+¡Cambiar siempre las dos contraseñas!
+alter user sys identified by "nueva";
+SYSDBA = todo (crear/borrar BD, startup/shutdown, recover, ve datos de usuario)
+SYSOPER = solo lo operativo (startup/shutdown/backup/alter database), SIN ver datos
+
+3· PARÁMETROS
+create pfile from spfile;     create spfile from memory;   (rutas con FROM/'ruta')
+Tipos: derivado / dependiente del SO / independiente  —  ESTÁTICO (reinicio) / DINÁMICO
+alter system set parametro=valor scope=spfile|memory|both;
+show parameter x;   show spparameter x;   v$parameter   v$system_parameter
+
+4· CONEXIONES EXTERNAS
+listener.ora  ($ORACLE_HOME/network/admin) → nombre, host, puerto (1521) del listener
+tnsnames.ora → alias = host + puerto + SERVICE_NAME
+lsnrctl status / start / stop   (listener caído = fallan solo las conexiones REMOTAS)
+Logs: log.xml (listener/alert, tail -f) · listener.log (listener/trace, cada conexión)
+
+5· HERRAMIENTAS CLIENTE
+Hace falta: cadena de conexión (host+puerto+service_name) + driver (Oracle Net)
+Oracle Client = se instala, trae SQL*Plus/SQL Developer, usa SU tnsnames.ora
+SQL Developer solo = no se instala nada, la conexión se da de alta en el propio programa
+
+6· DICCIONARIO DE DATOS
+Tablas base = codificadas, se crean con la BD · Vistas = catalog.sql, legibles
+USER_ (lo mío) · ALL_ (lo que veo) · DBA_ (todo, privilegio) · V$ (dinámicas, instancia)
+Vistas clave: OBJECTS·TABLES/TAB_COLUMNS·CONSTRAINTS/CONS_COLUMNS·VIEWS·TRIGGERS
+  SEQUENCES·SYNONYMS · TABLESPACES/SEGMENTS/EXTENTS · SYS_PRIVS/TAB_PRIVS/ROLES_SYS_PRIVS
+V$ clave: V$INSTANCE/V$DATABASE · V$PARAMETER/V$SPPARAMETER · V$SESSION/V$PROCESS
+  V$CONTROLFILE/V$DATAFILE/V$LOGFILE
+desc vista;   select * from user_catalog;   select * from user_objects;
+
+7· TRAZAS Y LOGS
+alert_&lt;SID&gt;.log → errores, STARTUP/SHUTDOWN/CREATE/ALTER, cambios de parámetros
+v$diag_info where name like '%Alert%' / = 'Diag Trace'   → dónde están los ficheros
+Procesos con traza propia: PMON · SMON · DBWR · LGWR · CKPT · ARCH · RECO
+Activar traza de sesión:
+  propio usuario → dbms_monitor.session_trace_enable(...)  (necesita grant de SYS)
+  admin sobre otra sesión → coger SID y SERIAL# de v$session primero
+Leer el .trc generado → tkprof</pre></div>
+
   <h2 class="rv" style="margin:40px 0 10px">Ejercicios resueltos</h2>
   <div class="filter-row rv" id="exFilter"></div>
   <div class="ex-grid rv" id="exGrid"></div>
