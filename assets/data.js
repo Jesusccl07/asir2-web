@@ -41,7 +41,11 @@ window.ASIR = {
       topics:[ { n:1, title:'Tema 1', items:[
         { id:'apuntes-oracle', title:'Apuntes Oracle', type:'Apuntes', desc:'Apuntes de teoría para el examen: arquitectura, CDB y PDB, espacio.', file:'temas/asgbd/apuntes-oracle.html' },
         { id:'oracle-docker', title:'Oracle en Docker', type:'Práctica', desc:'Instalación, arranque y parada de Oracle en Docker, con test y ranking.', file:'temas/asgbd/oracle-docker.html' },
-        { id:'test-oracle', title:'Test Oracle', type:'Test', desc:'Test tipo examen con arquitectura, tests y ranking.', file:'temas/asgbd/test-oracle.html' } ] } ] },
+        { id:'test-oracle', title:'Test Oracle', type:'Test', desc:'Test tipo examen con arquitectura, tests y ranking.', file:'temas/asgbd/test-oracle.html' } ] },
+        { n:2, title:'Tema 2 · Administración de la instancia', items:[
+        { id:'tema-2', title:'Teoría del Tema 2', type:'Apuntes', desc:'Arranque y parada, cuentas de administrador, parámetros, listener, clientes, diccionario de datos y trazas, con laboratorios interactivos.', file:'temas/asgbd/tema-2.html#teoria' },
+        { id:'tema-2-practica', title:'Práctica del Tema 2', type:'Práctica', desc:'Checklist por fases, chuleta de comandos y los ejercicios resueltos con el usuario SCOTT.', file:'temas/asgbd/tema-2.html#practica' },
+        { id:'tema-2-test', title:'Test Tema 2', type:'Test', desc:'Preguntas en 3 niveles con rachas, XP, modo examen y ranking.', file:'temas/asgbd/tema-2.html#test' } ] } ] },
     { slug:'herramientas', code:'EXTRA', name:'Herramientas', teacher:'', color:'#5E5CE6', icon:'cal',
       blurb:'Utilidades para organizar el curso.',
       topics:[ { n:1, title:'Organización', items:[ { id:'examenes', title:'Exámenes', type:'Herramienta', desc:'Agenda de exámenes con autorrelleno según tu horario.', file:'temas/herramientas/examenes.html', offset:84 } ] } ] }
